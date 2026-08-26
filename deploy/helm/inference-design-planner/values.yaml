@@ -1,0 +1,42 @@
+namespace: inference-planner
+
+backend:
+  replicas: 1
+  image: quay.io/your-org/inference-design-planner-backend:latest
+  port: 8000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+frontend:
+  replicas: 1
+  image: quay.io/your-org/inference-design-planner-frontend:latest
+  port: 3000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+postgresql:
+  enabled: true
+  image: postgres:15-alpine
+  storage: 5Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+env:
+  DATABASE_URL: postgresql+asyncpg://planner:planner@postgresql:5432/inference_planner
+  OPENAI_BASE_URL: https://api.openai.com/v1
+  LLM_MODEL_NAME: gpt-4o

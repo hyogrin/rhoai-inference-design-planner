@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: inference-design-planner
+    component: frontend
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      app: inference-design-planner
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: inference-design-planner
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: {{ .Values.frontend.image }}
+          ports:
+            - containerPort: {{ .Values.frontend.port }}
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: http://backend:8000
+            - name: NEXT_PUBLIC_AGENT_URL
+              value: http://backend:8000/agent
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: inference-design-planner
+    component: frontend
+  ports:
+    - port: 3000
+      targetPort: {{ .Values.frontend.port }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: inference-design-planner
+  namespace: {{ .Values.namespace }}
+spec:
+  to:
+    kind: Service
+    name: frontend
+  port:
+    targetPort: 3000
+  tls:
+    termination: edge

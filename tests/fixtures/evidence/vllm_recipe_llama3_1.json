@@ -1,0 +1,30 @@
+{
+  "model_id": "meta-llama/Llama-3.1-70B-Instruct",
+  "model_name": "Llama 3.1 70B Instruct",
+  "architecture": "LlamaForCausalLM",
+  "precision": "bfloat16",
+  "min_vllm_version": "0.6.0",
+  "min_vram_gb": 140,
+  "tested_hardware": [
+    {"gpu": "H100", "count": 4, "topology": "tp4"},
+    {"gpu": "A100-80GB", "count": 4, "topology": "tp4"},
+    {"gpu": "H100", "count": 2, "topology": "tp2", "precision": "fp8"}
+  ],
+  "strategies": ["single_node_tp", "multi_gpu"],
+  "required_args": {
+    "tensor_parallel_size": 4,
+    "max_model_len": 131072
+  },
+  "optional_args": {
+    "enable_prefix_caching": true,
+    "enable_chunked_prefill": true,
+    "gpu_memory_utilization": 0.90
+  },
+  "env_vars": {},
+  "tool_calling": {
+    "supported": true,
+    "parser": "llama3_json"
+  },
+  "source_url": "https://recipes.vllm.ai/models/meta-llama/Llama-3.1-70B-Instruct",
+  "updated_at": "2026-07-15T00:00:00Z"
+}

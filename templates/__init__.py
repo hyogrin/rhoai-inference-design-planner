@@ -1,0 +1,1 @@
+"""Configuration generation templates."""
