@@ -1,0 +1,287 @@
+{
+  "aws": {
+    "provider": "AWS",
+    "instances": {
+      "p5.48xlarge": {
+        "gpu": "H100",
+        "gpu_count": 8,
+        "gpu_memory_gb": 80,
+        "vcpus": 192,
+        "ram_gb": 2048,
+        "on_demand_hourly": 98.32,
+        "spot_hourly": 58.99,
+        "reserved_1yr_hourly": 63.91,
+        "region": "us-east-1"
+      },
+      "p5e.48xlarge": {
+        "gpu": "H200",
+        "gpu_count": 8,
+        "gpu_memory_gb": 141,
+        "vcpus": 192,
+        "ram_gb": 2048,
+        "on_demand_hourly": 120.00,
+        "spot_hourly": 72.00,
+        "reserved_1yr_hourly": 78.00,
+        "region": "us-east-1"
+      },
+      "p4d.24xlarge": {
+        "gpu": "A100-80GB",
+        "gpu_count": 8,
+        "gpu_memory_gb": 80,
+        "vcpus": 96,
+        "ram_gb": 1152,
+        "on_demand_hourly": 32.77,
+        "spot_hourly": 13.86,
+        "reserved_1yr_hourly": 20.70,
+        "region": "us-east-1"
+      },
+      "p4de.24xlarge": {
+        "gpu": "A100-80GB",
+        "gpu_count": 8,
+        "gpu_memory_gb": 80,
+        "vcpus": 96,
+        "ram_gb": 1152,
+        "on_demand_hourly": 40.96,
+        "spot_hourly": 16.38,
+        "reserved_1yr_hourly": 26.62,
+        "region": "us-east-1"
+      },
+      "g5.xlarge": {
+        "gpu": "A10G",
+        "gpu_count": 1,
+        "gpu_memory_gb": 24,
+        "vcpus": 4,
+        "ram_gb": 16,
+        "on_demand_hourly": 1.01,
+        "spot_hourly": 0.30,
+        "reserved_1yr_hourly": 0.64,
+        "region": "us-east-1"
+      },
+      "g5.12xlarge": {
+        "gpu": "A10G",
+        "gpu_count": 4,
+        "gpu_memory_gb": 24,
+        "vcpus": 48,
+        "ram_gb": 192,
+        "on_demand_hourly": 5.67,
+        "spot_hourly": 1.70,
+        "reserved_1yr_hourly": 3.58,
+        "region": "us-east-1"
+      },
+      "g5.48xlarge": {
+        "gpu": "A10G",
+        "gpu_count": 8,
+        "gpu_memory_gb": 24,
+        "vcpus": 192,
+        "ram_gb": 768,
+        "on_demand_hourly": 16.29,
+        "spot_hourly": 5.37,
+        "reserved_1yr_hourly": 10.28,
+        "region": "us-east-1"
+      },
+      "g6.xlarge": {
+        "gpu": "L4",
+        "gpu_count": 1,
+        "gpu_memory_gb": 24,
+        "vcpus": 4,
+        "ram_gb": 16,
+        "on_demand_hourly": 0.80,
+        "spot_hourly": 0.24,
+        "reserved_1yr_hourly": 0.51,
+        "region": "us-east-1"
+      },
+      "g6.48xlarge": {
+        "gpu": "L4",
+        "gpu_count": 8,
+        "gpu_memory_gb": 24,
+        "vcpus": 192,
+        "ram_gb": 768,
+        "on_demand_hourly": 13.35,
+        "spot_hourly": 4.41,
+        "reserved_1yr_hourly": 8.43,
+        "region": "us-east-1"
+      },
+      "g4dn.xlarge": {
+        "gpu": "T4",
+        "gpu_count": 1,
+        "gpu_memory_gb": 16,
+        "vcpus": 4,
+        "ram_gb": 16,
+        "on_demand_hourly": 0.53,
+        "spot_hourly": 0.16,
+        "reserved_1yr_hourly": 0.33,
+        "region": "us-east-1"
+      },
+      "g4dn.12xlarge": {
+        "gpu": "T4",
+        "gpu_count": 4,
+        "gpu_memory_gb": 16,
+        "vcpus": 48,
+        "ram_gb": 192,
+        "on_demand_hourly": 3.91,
+        "spot_hourly": 1.17,
+        "reserved_1yr_hourly": 2.47,
+        "region": "us-east-1"
+      }
+    },
+    "source_url": "https://aws.amazon.com/ec2/pricing/on-demand/",
+    "last_updated": "2026-07-01"
+  },
+  "gcp": {
+    "provider": "Google Cloud",
+    "instances": {
+      "a3-highgpu-8g": {
+        "gpu": "H100",
+        "gpu_count": 8,
+        "gpu_memory_gb": 80,
+        "vcpus": 208,
+        "ram_gb": 1872,
+        "on_demand_hourly": 101.22,
+        "spot_hourly": 30.37,
+        "reserved_1yr_hourly": 63.77,
+        "region": "us-central1"
+      },
+      "a3-megagpu-8g": {
+        "gpu": "H200",
+        "gpu_count": 8,
+        "gpu_memory_gb": 141,
+        "vcpus": 208,
+        "ram_gb": 1872,
+        "on_demand_hourly": 122.45,
+        "spot_hourly": 36.74,
+        "reserved_1yr_hourly": 79.59,
+        "region": "us-central1"
+      },
+      "a2-highgpu-1g": {
+        "gpu": "A100-80GB",
+        "gpu_count": 1,
+        "gpu_memory_gb": 80,
+        "vcpus": 12,
+        "ram_gb": 170,
+        "on_demand_hourly": 5.12,
+        "spot_hourly": 1.54,
+        "reserved_1yr_hourly": 3.23,
+        "region": "us-central1"
+      },
+      "a2-ultragpu-8g": {
+        "gpu": "A100-80GB",
+        "gpu_count": 8,
+        "gpu_memory_gb": 80,
+        "vcpus": 96,
+        "ram_gb": 1360,
+        "on_demand_hourly": 40.97,
+        "spot_hourly": 12.29,
+        "reserved_1yr_hourly": 25.81,
+        "region": "us-central1"
+      },
+      "g2-standard-4": {
+        "gpu": "L4",
+        "gpu_count": 1,
+        "gpu_memory_gb": 24,
+        "vcpus": 4,
+        "ram_gb": 16,
+        "on_demand_hourly": 0.84,
+        "spot_hourly": 0.25,
+        "reserved_1yr_hourly": 0.53,
+        "region": "us-central1"
+      },
+      "g2-standard-96": {
+        "gpu": "L4",
+        "gpu_count": 8,
+        "gpu_memory_gb": 24,
+        "vcpus": 96,
+        "ram_gb": 384,
+        "on_demand_hourly": 13.07,
+        "spot_hourly": 3.92,
+        "reserved_1yr_hourly": 8.23,
+        "region": "us-central1"
+      },
+      "n1-standard-4-t4": {
+        "gpu": "T4",
+        "gpu_count": 1,
+        "gpu_memory_gb": 16,
+        "vcpus": 4,
+        "ram_gb": 15,
+        "on_demand_hourly": 0.45,
+        "spot_hourly": 0.14,
+        "reserved_1yr_hourly": 0.28,
+        "region": "us-central1"
+      }
+    },
+    "source_url": "https://cloud.google.com/compute/gpus-pricing",
+    "last_updated": "2026-07-01"
+  },
+  "azure": {
+    "provider": "Microsoft Azure",
+    "instances": {
+      "Standard_ND96isr_H100_v5": {
+        "gpu": "H100",
+        "gpu_count": 8,
+        "gpu_memory_gb": 80,
+        "vcpus": 96,
+        "ram_gb": 1900,
+        "on_demand_hourly": 98.32,
+        "spot_hourly": 39.33,
+        "reserved_1yr_hourly": 60.29,
+        "region": "eastus"
+      },
+      "Standard_ND96isr_H200_v5": {
+        "gpu": "H200",
+        "gpu_count": 8,
+        "gpu_memory_gb": 141,
+        "vcpus": 96,
+        "ram_gb": 1900,
+        "on_demand_hourly": 118.50,
+        "spot_hourly": 47.40,
+        "reserved_1yr_hourly": 72.71,
+        "region": "eastus"
+      },
+      "Standard_ND96amsr_A100_v4": {
+        "gpu": "A100-80GB",
+        "gpu_count": 8,
+        "gpu_memory_gb": 80,
+        "vcpus": 96,
+        "ram_gb": 1900,
+        "on_demand_hourly": 32.77,
+        "spot_hourly": 9.83,
+        "reserved_1yr_hourly": 20.70,
+        "region": "eastus"
+      },
+      "Standard_NC24ads_A100_v4": {
+        "gpu": "A100-80GB",
+        "gpu_count": 1,
+        "gpu_memory_gb": 80,
+        "vcpus": 24,
+        "ram_gb": 220,
+        "on_demand_hourly": 3.67,
+        "spot_hourly": 1.10,
+        "reserved_1yr_hourly": 2.32,
+        "region": "eastus"
+      },
+      "Standard_NC4as_T4_v3": {
+        "gpu": "T4",
+        "gpu_count": 1,
+        "gpu_memory_gb": 16,
+        "vcpus": 4,
+        "ram_gb": 28,
+        "on_demand_hourly": 0.53,
+        "spot_hourly": 0.16,
+        "reserved_1yr_hourly": 0.33,
+        "region": "eastus"
+      },
+      "Standard_NC64as_T4_v3": {
+        "gpu": "T4",
+        "gpu_count": 4,
+        "gpu_memory_gb": 16,
+        "vcpus": 64,
+        "ram_gb": 440,
+        "on_demand_hourly": 4.35,
+        "spot_hourly": 1.31,
+        "reserved_1yr_hourly": 2.75,
+        "region": "eastus"
+      }
+    },
+    "source_url": "https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/",
+    "last_updated": "2026-07-01"
+  }
+}

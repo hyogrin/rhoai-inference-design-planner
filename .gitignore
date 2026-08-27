@@ -47,5 +47,9 @@ Thumbs.db
 # Ruff
 .ruff_cache/
 
+# Traces (MLflow JSONL exports)
+data/traces/*.jsonl
+data/traces/eval_results.json
+
 # Docker
 *.log

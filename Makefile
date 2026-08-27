@@ -1,4 +1,4 @@
-.PHONY: help install dev lint format test test-cov type-check generate-types run-backend run-frontend docker-build docker-up docker-down clean db-migrate smoke-test
+.PHONY: help install dev lint format test test-cov type-check generate-types backend-start frontend-start docker-build docker-up docker-down clean db-migrate smoke-test generate-golden run-eval mlflow
 
 PYTHON := python3
 UV := uv
@@ -36,10 +36,10 @@ generate-types: ## Generate TypeScript types from Pydantic schemas
 	$(UV) run python scripts/generate_types.py
 	cd frontend-next && $(NPM) run format
 
-run-backend: ## Run backend dev server
-	$(UV) run uvicorn backend.api:app --reload --host 0.0.0.0 --port 8000
+backend-start: ## Run backend dev server
+	$(UV) run uvicorn backend.api:app --reload --host 0.0.0.0 --port 7001
 
-run-frontend: ## Run frontend dev server
+frontend-start: ## Run frontend dev server
 	cd frontend-next && $(NPM) run dev
 
 docker-build: ## Build Docker images
@@ -57,6 +57,15 @@ db-migrate: ## Run database migrations
 smoke-test: ## Run local smoke test
 	@echo "Running smoke tests..."
 	$(UV) run pytest tests/ -v -m "smoke" --tb=short
+
+generate-golden: ## Generate golden dataset with Opus 4.6
+	$(UV) run python scripts/generate_golden.py
+
+generate-golden-dry: ## Preview golden generation without API calls
+	$(UV) run python scripts/generate_golden.py --dry-run
+
+run-eval: ## Run evaluation experiment against golden dataset
+	$(UV) run python scripts/run_eval.py
 
 clean: ## Clean generated files
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

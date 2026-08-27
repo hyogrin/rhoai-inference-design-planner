@@ -1,0 +1,116 @@
+{
+  "_meta": {
+    "description": "On-premises TCO reference data for GPU inference servers",
+    "last_updated": "2026-08-01",
+    "notes": "Costs are monthly unless stated otherwise. Hardware warranty/support is typically included by OEMs (Dell, Lenovo, etc.)"
+  },
+  "reference_configs": {
+    "8xH100-SXM": {
+      "description": "Lenovo ThinkSystem SR675 V3 (or equivalent) with 8x H100 SXM GPUs",
+      "gpu_type": "H100",
+      "gpu_count": 8,
+      "hardware": {
+        "total_cost_usd": 397801,
+        "depreciation_years": 3,
+        "monthly_cost_usd": 11050,
+        "source_url": "https://lenovopress.lenovo.com/lp1611-thinksystem-sr675-v3-server",
+        "notes": "Estimated from Lenovo press and TCO analysis"
+      },
+      "power_and_cooling": {
+        "kw_per_gpu": 1.25,
+        "pue_factor": 1.35,
+        "hours_per_month": 720,
+        "electricity_rate_per_kwh_usd": 0.07,
+        "monthly_cost_usd": 680,
+        "source_url": "https://www.amcompute.com/blog/ai-cluster-cost-breakdown-opex-tco-payback#costs-the-simulator-skips",
+        "notes": "Based on Texas electricity rates. Formula: gpu_count * kw_per_gpu * pue_factor * hours * rate"
+      },
+      "colocation": {
+        "per_gpu_monthly_usd": 150,
+        "monthly_cost_usd": 1200,
+        "source_url": "https://www.amcompute.com/blog/ai-cluster-cost-breakdown-opex-tco-payback#costs-the-simulator-skips",
+        "notes": "Rack space, network, physical security"
+      },
+      "staffing": {
+        "infra_engineer_fte": 0.5,
+        "platform_engineer_fte": 0.5,
+        "monthly_cost_usd": 6000,
+        "notes": "Varies by geography and location. Assumes US-based rates."
+      },
+      "redhat_ai_subscription": {
+        "product": "Red Hat AI Inference",
+        "tier": "Premium (24x7)",
+        "unit": "per physical AI accelerator",
+        "list_price_per_gpu_annual_usd": 2500,
+        "annual_cost_usd": 20000,
+        "monthly_cost_usd": 1667,
+        "source_url": "https://www.redhat.com/en/resources/ai-subscription-guide-detail",
+        "notes": "Red Hat AI Inference is per-GPU. RHAIE is per-node at $40,000/yr but for inference-only scope, AI Inference at $2,500/GPU is more cost-effective.",
+        "alternatives": {
+          "rhaie_per_node_annual_usd": 40000,
+          "rhaie_per_node_monthly_usd": 3333,
+          "rhelai_per_gpu_annual_usd": 2500,
+          "rhelai_per_gpu_monthly_usd": 208
+        }
+      },
+      "total_monthly_cost_usd": 20597,
+      "performance": {
+        "max_tokens_per_second": 32900,
+        "input_output_ratio": "80/20",
+        "max_monthly_tokens_billion": 85.4,
+        "conservative_monthly_tokens_billion": 80.0,
+        "source_url": "https://mlcommons.org/benchmarks/inference-datacenter/",
+        "notes": "Assumes 80% input / 20% output token ratio (document summary, analysis, classification use cases)"
+      }
+    }
+  },
+  "cost_scaling_factors": {
+    "description": "Scaling factors to estimate TCO for different GPU counts and types relative to the 8xH100 reference config",
+    "hardware_cost_ratio": {
+      "B200": 1.30,
+      "H200": 1.15,
+      "H100": 1.00,
+      "MI300X": 0.70,
+      "A100-80GB": 0.55,
+      "A100-40GB": 0.45,
+      "L40S": 0.35,
+      "L4": 0.15,
+      "A10G": 0.15,
+      "T4": 0.10
+    },
+    "power_kw_per_gpu": {
+      "B200": 1.50,
+      "H200": 1.25,
+      "H100": 1.25,
+      "MI300X": 1.30,
+      "A100-80GB": 0.75,
+      "A100-40GB": 0.75,
+      "L40S": 0.55,
+      "L4": 0.15,
+      "A10G": 0.30,
+      "T4": 0.15
+    }
+  },
+  "tco_sources": {
+    "lenovo_sr675_v3": {
+      "url": "https://lenovopress.lenovo.com/lp1611-thinksystem-sr675-v3-server",
+      "description": "Lenovo ThinkSystem SR675 V3 server specifications"
+    },
+    "lenovo_tco_2026": {
+      "url": "https://lenovopress.lenovo.com/lp2368-on-premise-vs-cloud-generative-ai-total-cost-of-ownership-2026-edition#total-cost-of-ownership-tco-analysis",
+      "description": "Lenovo on-premise vs cloud GenAI TCO analysis (2026 edition)"
+    },
+    "amcompute_opex": {
+      "url": "https://www.amcompute.com/blog/ai-cluster-cost-breakdown-opex-tco-payback#costs-the-simulator-skips",
+      "description": "AI cluster cost breakdown: OPEX, TCO, and payback analysis"
+    },
+    "redhat_subscription_guide": {
+      "url": "https://www.redhat.com/en/resources/ai-subscription-guide-detail",
+      "description": "Red Hat AI subscription guide detailing RHAIE, RHAI Inference, RHELAI, and OCP AI pricing"
+    },
+    "mlcommons_inference": {
+      "url": "https://mlcommons.org/benchmarks/inference-datacenter/",
+      "description": "MLCommons inference datacenter benchmark results"
+    }
+  }
+}

@@ -37,6 +37,7 @@ class ModelArchitecture(BaseModel):
     parameter_count_total: int | None = None
     parameter_count_active: int | None = None
     parameter_count_by_dtype: dict[str, int] | None = None
+    checkpoint_size_bytes: int | None = None
     weight_format: str | None = None
     weight_precision: str | None = None
     quantization_method: str | None = None
@@ -49,6 +50,16 @@ class ModelArchitecture(BaseModel):
     head_dim: int | None = None
     max_position_embeddings: int | None = None
     sliding_window: int | None = None
+
+    # Hybrid attention (e.g. Gemma 4: sliding + full attention layers)
+    sliding_attention_layers: int | None = None
+    full_attention_layers: int | None = None
+    global_head_dim: int | None = None
+    num_global_kv_heads: int | None = None
+
+    # MLA (Multi-head Latent Attention, e.g. DeepSeek-V3, GLM-5.2)
+    kv_lora_rank: int | None = None
+    qk_rope_head_dim: int | None = None
 
     attention_layer_count: int | None = None
     linear_attention_layer_count: int | None = None

@@ -127,28 +127,37 @@ class TestPricingConnector:
         self.connector = PricingConnector()
 
     @pytest.mark.asyncio
-    async def test_get_pricing_h100(self):
-        evidence = await self.connector.get_pricing_evidence("H100", gpu_count=8)
+    async def test_get_pricing_h100_onprem(self):
+        evidence = await self.connector.get_pricing_evidence("H100", gpu_count=8, environment_type="on_prem")
+        assert len(evidence) > 0
+        for item in evidence:
+            assert item.category == "pricing"
+            assert "H100" in item.hardware_signature or "H100" in item.summary
+        tco_items = [e for e in evidence if e.claim_type == "tco"]
+        assert len(tco_items) >= 1
+
+    @pytest.mark.asyncio
+    async def test_get_pricing_h100_cloud(self):
+        evidence = await self.connector.get_pricing_evidence("H100", gpu_count=8, environment_type="aws")
         assert len(evidence) > 0
         for item in evidence:
             assert item.category == "pricing"
             assert item.claim_type == "price"
-            assert "H100" in item.hardware_signature or "H100" in item.summary
 
     @pytest.mark.asyncio
     async def test_get_pricing_a100(self):
-        evidence = await self.connector.get_pricing_evidence("A100-80GB", gpu_count=1)
+        evidence = await self.connector.get_pricing_evidence("A100-80GB", gpu_count=1, environment_type="aws")
         assert len(evidence) > 0
 
     @pytest.mark.asyncio
     async def test_get_pricing_specific_provider(self):
-        evidence = await self.connector.get_pricing_evidence("H100", providers=["aws"])
+        evidence = await self.connector.get_pricing_evidence("H100", environment_type="aws", providers=["aws"])
         aws_evidence = [e for e in evidence if "AWS" in e.summary]
         assert len(aws_evidence) > 0
 
     @pytest.mark.asyncio
     async def test_get_pricing_unknown_gpu(self):
-        evidence = await self.connector.get_pricing_evidence("NONEXISTENT_GPU")
+        evidence = await self.connector.get_pricing_evidence("NONEXISTENT_GPU", environment_type="aws")
         assert len(evidence) == 0
 
     def test_get_gpu_specs(self):

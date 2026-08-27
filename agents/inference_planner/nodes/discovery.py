@@ -55,9 +55,46 @@ async def fetch_huggingface_metadata(state: PlannerState) -> dict[str, Any]:
             "phase_history": ["hf_metadata_failed"],
         }
 
+    from datetime import datetime, timezone
+    from domain.evidence import EvidenceItem
+
+    arch_dict = architecture.model_dump(mode="json")
+    arch_summary_parts = []
+    if arch_dict.get("architecture_type"):
+        arch_summary_parts.append(f"type={arch_dict['architecture_type']}")
+    if arch_dict.get("num_hidden_layers"):
+        arch_summary_parts.append(f"layers={arch_dict['num_hidden_layers']}")
+    if arch_dict.get("kv_lora_rank"):
+        arch_summary_parts.append(f"MLA(kv_lora_rank={arch_dict['kv_lora_rank']})")
+    if arch_dict.get("sliding_attention_layers"):
+        arch_summary_parts.append(
+            f"hybrid({arch_dict['sliding_attention_layers']}sliding+"
+            f"{arch_dict.get('full_attention_layers', '?')}full)"
+        )
+    if arch_dict.get("num_experts_total"):
+        arch_summary_parts.append(f"MoE({arch_dict['num_experts_total']}experts)")
+
+    evidence_item = EvidenceItem(
+        category="model_metadata",
+        claim_type="architecture",
+        title=f"HuggingFace config.json for {repo_id}",
+        summary=f"Official model architecture: {', '.join(arch_summary_parts) or 'standard transformer'}. "
+                f"Parameters: {arch_dict.get('parameter_count_total')}, "
+                f"head_dim: {arch_dict.get('head_dim')}, "
+                f"num_kv_heads: {arch_dict.get('num_kv_heads')}.",
+        source_url=f"https://huggingface.co/{repo_id}/blob/{revision}/config.json",
+        source_domain="huggingface.co",
+        publisher="Hugging Face",
+        retrieved_at=datetime.now(timezone.utc),
+        model_revision=revision,
+        source_tier="primary",
+        verification_level="verified",
+    )
+
     return {
         "model_identity": identity.model_dump(mode="json"),
-        "model_architecture": architecture.model_dump(mode="json"),
+        "model_architecture": arch_dict,
+        "evidence_items": [evidence_item.model_dump(mode="json")],
         "phase_history": ["hf_metadata_fetched"],
     }
 
@@ -177,39 +214,36 @@ async def check_rhoai_compatibility(state: PlannerState) -> dict[str, Any]:
 
 
 async def fetch_pricing(state: PlannerState) -> dict[str, Any]:
-    """Fetch GPU pricing data based on architecture requirements."""
+    """Fetch GPU pricing data based on architecture and hardware config."""
     architecture = state.get("model_architecture")
     if not architecture:
         return {"phase_history": ["pricing_skipped"]}
 
-    param_count = architecture.get("parameter_count_total") if isinstance(architecture, dict) else None
+    hardware = state.get("hardware_inventory") or {}
+    environment_type = hardware.get("environment_type", "on_prem")
 
-    gpu_type = "H100"
-    gpu_count = 1
-    if param_count:
-        if param_count > 100_000_000_000:
-            gpu_type = "H100"
-            gpu_count = 4
-        elif param_count > 30_000_000_000:
-            gpu_type = "H100"
-            gpu_count = 2
-        elif param_count > 13_000_000_000:
-            gpu_type = "A100-80GB"
-            gpu_count = 1
-        else:
-            gpu_type = "L4"
-            gpu_count = 1
+    gpu_type = hardware.get("gpu_type")
+    gpu_count = hardware.get("gpu_count") or 1
+
+    if not gpu_type:
+        logger.info("No GPU type specified by user — skipping pricing discovery")
+        return {"phase_history": ["pricing_skipped_no_gpu"]}
 
     connector = PricingConnector()
 
     try:
-        evidence_items = await connector.get_pricing_evidence(gpu_type, gpu_count)
+        evidence_items = await connector.get_pricing_evidence(
+            gpu_type, gpu_count, environment_type=environment_type
+        )
     except Exception as exc:
         logger.warning("Pricing fetch failed: %s", exc)
         return {"phase_history": ["pricing_failed"]}
 
     new_evidence = [item.model_dump(mode="json") for item in evidence_items]
-    logger.info("Found %d pricing evidence items for %s x%d", len(new_evidence), gpu_type, gpu_count)
+    logger.info(
+        "Found %d pricing evidence items for %s x%d (%s)",
+        len(new_evidence), gpu_type, gpu_count, environment_type,
+    )
 
     return {
         "evidence_items": new_evidence,

@@ -2,10 +2,15 @@
 
 Provides cost data for GPU instances across major cloud providers
 and on-premises GPU hardware for TCO calculations.
+
+Data is loaded from JSON files in connectors/data/ for easy updates
+without code changes.
 """
 
+import json
 import logging
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -13,431 +18,102 @@ from domain.evidence import EvidenceItem
 
 logger = logging.getLogger(__name__)
 
-_CLOUD_GPU_PRICING: dict[str, dict[str, Any]] = {
-    "aws": {
-        "provider": "AWS",
-        "instances": {
-            "p5.48xlarge": {
-                "gpu": "H100",
-                "gpu_count": 8,
-                "gpu_memory_gb": 80,
-                "vcpus": 192,
-                "ram_gb": 2048,
-                "on_demand_hourly": 98.32,
-                "spot_hourly": 58.99,
-                "reserved_1yr_hourly": 63.91,
-                "region": "us-east-1",
-            },
-            "p5e.48xlarge": {
-                "gpu": "H200",
-                "gpu_count": 8,
-                "gpu_memory_gb": 141,
-                "vcpus": 192,
-                "ram_gb": 2048,
-                "on_demand_hourly": 120.00,
-                "spot_hourly": 72.00,
-                "reserved_1yr_hourly": 78.00,
-                "region": "us-east-1",
-            },
-            "p4d.24xlarge": {
-                "gpu": "A100-80GB",
-                "gpu_count": 8,
-                "gpu_memory_gb": 80,
-                "vcpus": 96,
-                "ram_gb": 1152,
-                "on_demand_hourly": 32.77,
-                "spot_hourly": 13.86,
-                "reserved_1yr_hourly": 20.70,
-                "region": "us-east-1",
-            },
-            "p4de.24xlarge": {
-                "gpu": "A100-80GB",
-                "gpu_count": 8,
-                "gpu_memory_gb": 80,
-                "vcpus": 96,
-                "ram_gb": 1152,
-                "on_demand_hourly": 40.96,
-                "spot_hourly": 16.38,
-                "reserved_1yr_hourly": 26.62,
-                "region": "us-east-1",
-            },
-            "g5.xlarge": {
-                "gpu": "A10G",
-                "gpu_count": 1,
-                "gpu_memory_gb": 24,
-                "vcpus": 4,
-                "ram_gb": 16,
-                "on_demand_hourly": 1.01,
-                "spot_hourly": 0.30,
-                "reserved_1yr_hourly": 0.64,
-                "region": "us-east-1",
-            },
-            "g5.12xlarge": {
-                "gpu": "A10G",
-                "gpu_count": 4,
-                "gpu_memory_gb": 24,
-                "vcpus": 48,
-                "ram_gb": 192,
-                "on_demand_hourly": 5.67,
-                "spot_hourly": 1.70,
-                "reserved_1yr_hourly": 3.58,
-                "region": "us-east-1",
-            },
-            "g5.48xlarge": {
-                "gpu": "A10G",
-                "gpu_count": 8,
-                "gpu_memory_gb": 24,
-                "vcpus": 192,
-                "ram_gb": 768,
-                "on_demand_hourly": 16.29,
-                "spot_hourly": 5.37,
-                "reserved_1yr_hourly": 10.28,
-                "region": "us-east-1",
-            },
-            "g6.xlarge": {
-                "gpu": "L4",
-                "gpu_count": 1,
-                "gpu_memory_gb": 24,
-                "vcpus": 4,
-                "ram_gb": 16,
-                "on_demand_hourly": 0.80,
-                "spot_hourly": 0.24,
-                "reserved_1yr_hourly": 0.51,
-                "region": "us-east-1",
-            },
-            "g6.48xlarge": {
-                "gpu": "L4",
-                "gpu_count": 8,
-                "gpu_memory_gb": 24,
-                "vcpus": 192,
-                "ram_gb": 768,
-                "on_demand_hourly": 13.35,
-                "spot_hourly": 4.41,
-                "reserved_1yr_hourly": 8.43,
-                "region": "us-east-1",
-            },
-            "g4dn.xlarge": {
-                "gpu": "T4",
-                "gpu_count": 1,
-                "gpu_memory_gb": 16,
-                "vcpus": 4,
-                "ram_gb": 16,
-                "on_demand_hourly": 0.53,
-                "spot_hourly": 0.16,
-                "reserved_1yr_hourly": 0.33,
-                "region": "us-east-1",
-            },
-            "g4dn.12xlarge": {
-                "gpu": "T4",
-                "gpu_count": 4,
-                "gpu_memory_gb": 16,
-                "vcpus": 48,
-                "ram_gb": 192,
-                "on_demand_hourly": 3.91,
-                "spot_hourly": 1.17,
-                "reserved_1yr_hourly": 2.47,
-                "region": "us-east-1",
-            },
-        },
-        "source_url": "https://aws.amazon.com/ec2/pricing/on-demand/",
-        "last_updated": "2026-07-01",
-    },
-    "gcp": {
-        "provider": "Google Cloud",
-        "instances": {
-            "a3-highgpu-8g": {
-                "gpu": "H100",
-                "gpu_count": 8,
-                "gpu_memory_gb": 80,
-                "vcpus": 208,
-                "ram_gb": 1872,
-                "on_demand_hourly": 101.22,
-                "spot_hourly": 30.37,
-                "reserved_1yr_hourly": 63.77,
-                "region": "us-central1",
-            },
-            "a3-megagpu-8g": {
-                "gpu": "H200",
-                "gpu_count": 8,
-                "gpu_memory_gb": 141,
-                "vcpus": 208,
-                "ram_gb": 1872,
-                "on_demand_hourly": 122.45,
-                "spot_hourly": 36.74,
-                "reserved_1yr_hourly": 79.59,
-                "region": "us-central1",
-            },
-            "a2-highgpu-1g": {
-                "gpu": "A100-80GB",
-                "gpu_count": 1,
-                "gpu_memory_gb": 80,
-                "vcpus": 12,
-                "ram_gb": 170,
-                "on_demand_hourly": 5.12,
-                "spot_hourly": 1.54,
-                "reserved_1yr_hourly": 3.23,
-                "region": "us-central1",
-            },
-            "a2-ultragpu-8g": {
-                "gpu": "A100-80GB",
-                "gpu_count": 8,
-                "gpu_memory_gb": 80,
-                "vcpus": 96,
-                "ram_gb": 1360,
-                "on_demand_hourly": 40.97,
-                "spot_hourly": 12.29,
-                "reserved_1yr_hourly": 25.81,
-                "region": "us-central1",
-            },
-            "g2-standard-4": {
-                "gpu": "L4",
-                "gpu_count": 1,
-                "gpu_memory_gb": 24,
-                "vcpus": 4,
-                "ram_gb": 16,
-                "on_demand_hourly": 0.84,
-                "spot_hourly": 0.25,
-                "reserved_1yr_hourly": 0.53,
-                "region": "us-central1",
-            },
-            "g2-standard-96": {
-                "gpu": "L4",
-                "gpu_count": 8,
-                "gpu_memory_gb": 24,
-                "vcpus": 96,
-                "ram_gb": 384,
-                "on_demand_hourly": 13.07,
-                "spot_hourly": 3.92,
-                "reserved_1yr_hourly": 8.23,
-                "region": "us-central1",
-            },
-            "n1-standard-4-t4": {
-                "gpu": "T4",
-                "gpu_count": 1,
-                "gpu_memory_gb": 16,
-                "vcpus": 4,
-                "ram_gb": 15,
-                "on_demand_hourly": 0.45,
-                "spot_hourly": 0.14,
-                "reserved_1yr_hourly": 0.28,
-                "region": "us-central1",
-            },
-        },
-        "source_url": "https://cloud.google.com/compute/gpus-pricing",
-        "last_updated": "2026-07-01",
-    },
-    "azure": {
-        "provider": "Microsoft Azure",
-        "instances": {
-            "Standard_ND96isr_H100_v5": {
-                "gpu": "H100",
-                "gpu_count": 8,
-                "gpu_memory_gb": 80,
-                "vcpus": 96,
-                "ram_gb": 1900,
-                "on_demand_hourly": 98.32,
-                "spot_hourly": 39.33,
-                "reserved_1yr_hourly": 60.29,
-                "region": "eastus",
-            },
-            "Standard_ND96isr_H200_v5": {
-                "gpu": "H200",
-                "gpu_count": 8,
-                "gpu_memory_gb": 141,
-                "vcpus": 96,
-                "ram_gb": 1900,
-                "on_demand_hourly": 118.50,
-                "spot_hourly": 47.40,
-                "reserved_1yr_hourly": 72.71,
-                "region": "eastus",
-            },
-            "Standard_ND96amsr_A100_v4": {
-                "gpu": "A100-80GB",
-                "gpu_count": 8,
-                "gpu_memory_gb": 80,
-                "vcpus": 96,
-                "ram_gb": 1900,
-                "on_demand_hourly": 32.77,
-                "spot_hourly": 9.83,
-                "reserved_1yr_hourly": 20.70,
-                "region": "eastus",
-            },
-            "Standard_NC24ads_A100_v4": {
-                "gpu": "A100-80GB",
-                "gpu_count": 1,
-                "gpu_memory_gb": 80,
-                "vcpus": 24,
-                "ram_gb": 220,
-                "on_demand_hourly": 3.67,
-                "spot_hourly": 1.10,
-                "reserved_1yr_hourly": 2.32,
-                "region": "eastus",
-            },
-            "Standard_NC4as_T4_v3": {
-                "gpu": "T4",
-                "gpu_count": 1,
-                "gpu_memory_gb": 16,
-                "vcpus": 4,
-                "ram_gb": 28,
-                "on_demand_hourly": 0.53,
-                "spot_hourly": 0.16,
-                "reserved_1yr_hourly": 0.33,
-                "region": "eastus",
-            },
-            "Standard_NC64as_T4_v3": {
-                "gpu": "T4",
-                "gpu_count": 4,
-                "gpu_memory_gb": 16,
-                "vcpus": 64,
-                "ram_gb": 440,
-                "on_demand_hourly": 4.35,
-                "spot_hourly": 1.31,
-                "reserved_1yr_hourly": 2.75,
-                "region": "eastus",
-            },
-        },
-        "source_url": "https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/",
-        "last_updated": "2026-07-01",
-    },
+_DATA_DIR = Path(__file__).parent / "data"
+
+# Canonical GPU name mapping: full sizing key → scaling factor key
+_GPU_SCALING_KEY: dict[str, str] = {
+    "B200-192GB": "B200",
+    "H200-141GB": "H200",
+    "H100-80GB": "H100",
+    "MI300X-192GB": "MI300X",
+    "A100-80GB": "A100-80GB",
+    "A100-40GB": "A100-40GB",
+    "L40S-48GB": "L40S",
+    "A10G-24GB": "A10G",
+    "L4-24GB": "L4",
+    "T4-16GB": "T4",
 }
 
-_ON_PREM_GPU_PRICING: dict[str, dict[str, Any]] = {
-    "B200": {
-        "gpu_name": "NVIDIA B200",
-        "memory_gb": 192,
-        "bf16_tflops": 2250,
-        "fp8_tflops": 4500,
-        "memory_bandwidth_tbps": 8.0,
-        "tdp_watts": 1000,
-        "list_price_usd": 40000,
-        "typical_street_price_usd": 37000,
-    },
-    "H200": {
-        "gpu_name": "NVIDIA H200 SXM",
-        "memory_gb": 141,
-        "bf16_tflops": 989,
-        "fp8_tflops": 1979,
-        "memory_bandwidth_tbps": 4.8,
-        "tdp_watts": 700,
-        "list_price_usd": 35000,
-        "typical_street_price_usd": 30000,
-    },
-    "H100-SXM": {
-        "gpu_name": "NVIDIA H100 SXM",
-        "memory_gb": 80,
-        "bf16_tflops": 989,
-        "fp8_tflops": 1979,
-        "memory_bandwidth_tbps": 3.35,
-        "tdp_watts": 700,
-        "list_price_usd": 30000,
-        "typical_street_price_usd": 25000,
-    },
-    "H100-PCIe": {
-        "gpu_name": "NVIDIA H100 PCIe",
-        "memory_gb": 80,
-        "bf16_tflops": 756,
-        "fp8_tflops": 1513,
-        "memory_bandwidth_tbps": 2.0,
-        "tdp_watts": 350,
-        "list_price_usd": 25000,
-        "typical_street_price_usd": 22000,
-    },
-    "MI300X": {
-        "gpu_name": "AMD Instinct MI300X",
-        "memory_gb": 192,
-        "bf16_tflops": 1307,
-        "fp8_tflops": 2614,
-        "memory_bandwidth_tbps": 5.3,
-        "tdp_watts": 750,
-        "list_price_usd": 20000,
-        "typical_street_price_usd": 15000,
-    },
-    "A100-SXM-80GB": {
-        "gpu_name": "NVIDIA A100 SXM 80GB",
-        "memory_gb": 80,
-        "bf16_tflops": 312,
-        "fp8_tflops": 0,
-        "memory_bandwidth_tbps": 2.0,
-        "tdp_watts": 400,
-        "list_price_usd": 15000,
-        "typical_street_price_usd": 10000,
-    },
-    "A100-PCIe-80GB": {
-        "gpu_name": "NVIDIA A100 PCIe 80GB",
-        "memory_gb": 80,
-        "bf16_tflops": 312,
-        "fp8_tflops": 0,
-        "memory_bandwidth_tbps": 2.0,
-        "tdp_watts": 300,
-        "list_price_usd": 11000,
-        "typical_street_price_usd": 8000,
-    },
-    "L4": {
-        "gpu_name": "NVIDIA L4",
-        "memory_gb": 24,
-        "bf16_tflops": 121,
-        "fp8_tflops": 242,
-        "memory_bandwidth_tbps": 0.3,
-        "tdp_watts": 72,
-        "list_price_usd": 2500,
-        "typical_street_price_usd": 2200,
-    },
-    "L40S": {
-        "gpu_name": "NVIDIA L40S",
-        "memory_gb": 48,
-        "bf16_tflops": 362,
-        "fp8_tflops": 733,
-        "memory_bandwidth_tbps": 0.864,
-        "tdp_watts": 350,
-        "list_price_usd": 7500,
-        "typical_street_price_usd": 6500,
-    },
-    "A10G": {
-        "gpu_name": "NVIDIA A10G",
-        "memory_gb": 24,
-        "bf16_tflops": 125,
-        "fp8_tflops": 0,
-        "memory_bandwidth_tbps": 0.6,
-        "tdp_watts": 150,
-        "list_price_usd": 3500,
-        "typical_street_price_usd": 2500,
-    },
-    "T4": {
-        "gpu_name": "NVIDIA T4",
-        "memory_gb": 16,
-        "bf16_tflops": 65,
-        "fp8_tflops": 0,
-        "memory_bandwidth_tbps": 0.32,
-        "tdp_watts": 70,
-        "list_price_usd": 2000,
-        "typical_street_price_usd": 1500,
-    },
-}
+
+def _resolve_scaling_key(gpu_type: str) -> str:
+    """Resolve a GPU type string to its scaling factor dictionary key."""
+    if gpu_type in _GPU_SCALING_KEY:
+        return _GPU_SCALING_KEY[gpu_type]
+    # Try exact match in scaling dicts (handles both short and full names)
+    upper = gpu_type.upper()
+    for canonical, key in _GPU_SCALING_KEY.items():
+        if upper == canonical.upper() or upper == key.upper():
+            return key
+    # Fallback: first segment before dash
+    return gpu_type.split("-")[0]
+
+
+def _load_json(filename: str) -> dict[str, Any]:
+    path = _DATA_DIR / filename
+    with path.open() as f:
+        return json.load(f)
+
+
+_cloud_pricing_cache: dict[str, Any] | None = None
+_gpu_specs_cache: dict[str, Any] | None = None
+_onprem_tco_cache: dict[str, Any] | None = None
+
+
+def _get_cloud_pricing() -> dict[str, Any]:
+    global _cloud_pricing_cache
+    if _cloud_pricing_cache is None:
+        _cloud_pricing_cache = _load_json("cloud_gpu_pricing.json")
+    return _cloud_pricing_cache
+
+
+def _get_gpu_specs() -> dict[str, Any]:
+    global _gpu_specs_cache
+    if _gpu_specs_cache is None:
+        _gpu_specs_cache = _load_json("gpu_specs.json")
+    return _gpu_specs_cache
+
+
+def _get_onprem_tco() -> dict[str, Any]:
+    global _onprem_tco_cache
+    if _onprem_tco_cache is None:
+        _onprem_tco_cache = _load_json("onprem_tco.json")
+    return _onprem_tco_cache
 
 
 class PricingConnector:
     """Provides GPU pricing data for cost estimation."""
 
     def __init__(self):
-        self._cloud_data = _CLOUD_GPU_PRICING
-        self._on_prem_data = _ON_PREM_GPU_PRICING
+        self._cloud_data = _get_cloud_pricing()
+        self._gpu_specs = _get_gpu_specs()
+        self._onprem_tco = _get_onprem_tco()
 
     async def get_pricing_evidence(
         self,
         gpu_type: str,
         gpu_count: int = 1,
+        environment_type: str = "on_prem",
         providers: list[str] | None = None,
     ) -> list[EvidenceItem]:
-        """Get pricing evidence for a specific GPU configuration.
+        """Get pricing evidence based on environment type.
 
-        Args:
-            gpu_type: GPU model name (e.g., "H100", "A100-80GB")
-            gpu_count: Number of GPUs needed
-            providers: Specific cloud providers to check (default: all)
-
-        Returns:
-            List of EvidenceItem with pricing claims
+        For cloud environments, returns matching cloud instance pricing.
+        For on-prem, returns TCO breakdown evidence.
         """
+        if environment_type == "on_prem":
+            return self._get_onprem_tco_evidence(gpu_type, gpu_count)
+
+        return self._get_cloud_pricing_evidence(
+            gpu_type, gpu_count, providers=[environment_type] if not providers else providers
+        )
+
+    def _get_cloud_pricing_evidence(
+        self,
+        gpu_type: str,
+        gpu_count: int = 1,
+        providers: list[str] | None = None,
+    ) -> list[EvidenceItem]:
+        """Get cloud pricing evidence for a specific GPU configuration."""
         evidence: list[EvidenceItem] = []
         target_providers = providers or list(self._cloud_data.keys())
 
@@ -457,26 +133,261 @@ class PricingConnector:
                     provider_data["source_url"],
                 ))
 
-        on_prem = self._get_on_prem_pricing(gpu_type)
+        on_prem = self._get_on_prem_gpu_pricing(gpu_type)
         if on_prem:
             evidence.append(on_prem)
 
         return evidence
 
+    def _get_onprem_tco_evidence(
+        self,
+        gpu_type: str,
+        gpu_count: int,
+    ) -> list[EvidenceItem]:
+        """Get on-premises TCO evidence with full cost breakdown."""
+        evidence: list[EvidenceItem] = []
+        ref_configs = self._onprem_tco.get("reference_configs", {})
+        scaling = self._onprem_tco.get("cost_scaling_factors", {})
+        sources = self._onprem_tco.get("tco_sources", {})
+
+        ref_config = self._find_closest_reference(ref_configs, gpu_type, gpu_count)
+        if not ref_config:
+            gpu_specs = self.get_gpu_specs(gpu_type)
+            if gpu_specs:
+                return [self._build_scaled_tco_evidence(gpu_type, gpu_count, scaling, sources)]
+            return evidence
+
+        hw = ref_config["hardware"]
+        power = ref_config["power_and_cooling"]
+        colo = ref_config["colocation"]
+        staff = ref_config["staffing"]
+        rh_sub = ref_config["redhat_ai_subscription"]
+        scale = gpu_count / ref_config["gpu_count"]
+
+        # Apply hardware cost ratio if GPU type differs from reference
+        scaling_key = _resolve_scaling_key(gpu_type)
+        ref_scaling_key = _resolve_scaling_key(ref_config["gpu_type"])
+        hw_ratio = scaling.get("hardware_cost_ratio", {}).get(scaling_key, 1.0)
+        ref_hw_ratio = scaling.get("hardware_cost_ratio", {}).get(ref_scaling_key, 1.0)
+        type_scale = hw_ratio / ref_hw_ratio if ref_hw_ratio else 1.0
+
+        hw_monthly = hw["monthly_cost_usd"] * scale * type_scale
+        power_monthly = self._calc_power_cost(gpu_type, gpu_count, scaling, power)
+        colo_monthly = colo["per_gpu_monthly_usd"] * gpu_count
+        staff_monthly = staff["monthly_cost_usd"]
+        rh_monthly = (rh_sub["list_price_per_gpu_annual_usd"] * gpu_count) / 12
+        total_monthly = hw_monthly + power_monthly + colo_monthly + staff_monthly + rh_monthly
+
+        # Get actual kW for display
+        actual_kw = scaling.get("power_kw_per_gpu", {}).get(
+            scaling_key, power["kw_per_gpu"]
+        )
+
+        tco_summary = (
+            f"On-Premises TCO for {gpu_count}x {gpu_type} (monthly): "
+            f"Hardware depreciation (3yr): ${hw_monthly:,.0f}; "
+            f"Power & cooling: ${power_monthly:,.0f}; "
+            f"Colocation: ${colo_monthly:,.0f}; "
+            f"Staffing (1 FTE shared): ${staff_monthly:,.0f}; "
+            f"Red Hat AI Inference ({gpu_count} GPUs): ${rh_monthly:,.0f}; "
+            f"Total: ${total_monthly:,.0f}/month"
+        )
+
+        evidence.append(EvidenceItem(
+            evidence_id=uuid4(),
+            category="pricing",
+            claim_type="tco",
+            title=f"On-Premises TCO: {gpu_count}x {gpu_type}",
+            summary=tco_summary,
+            source_url=sources.get("lenovo_tco_2026", {}).get("url", ""),
+            source_domain="lenovopress.lenovo.com",
+            publisher="Lenovo / AMCompute / Red Hat",
+            retrieved_at=datetime.now(UTC),
+            hardware_signature=f"{gpu_count}x{gpu_type}",
+            source_tier="secondary",
+            verification_level="estimated",
+            freshness_status="current",
+        ))
+
+        evidence.append(EvidenceItem(
+            evidence_id=uuid4(),
+            category="pricing",
+            claim_type="tco_breakdown",
+            title=f"Hardware Depreciation: {gpu_count}x {gpu_type}",
+            summary=(
+                f"Server hardware ~${hw['total_cost_usd'] * scale * type_scale:,.0f} "
+                f"over {hw['depreciation_years']}yr = ${hw_monthly:,.0f}/month. "
+                f"Warranty/support typically included by OEM."
+            ),
+            source_url=hw["source_url"],
+            source_domain="lenovopress.lenovo.com",
+            publisher="Lenovo",
+            retrieved_at=datetime.now(UTC),
+            hardware_signature=f"{gpu_count}x{gpu_type}",
+            source_tier="primary",
+            verification_level="estimated",
+            freshness_status="current",
+        ))
+
+        evidence.append(EvidenceItem(
+            evidence_id=uuid4(),
+            category="pricing",
+            claim_type="tco_breakdown",
+            title=f"Power & Cooling: {gpu_count}x {gpu_type}",
+            summary=(
+                f"{gpu_count} GPUs × {actual_kw}kW × "
+                f"PUE {power['pue_factor']} × {power['hours_per_month']}hrs × "
+                f"${power['electricity_rate_per_kwh_usd']}/kWh = ${power_monthly:,.0f}/month"
+            ),
+            source_url=power["source_url"],
+            source_domain="amcompute.com",
+            publisher="AMCompute",
+            retrieved_at=datetime.now(UTC),
+            hardware_signature=f"{gpu_count}x{gpu_type}",
+            source_tier="secondary",
+            verification_level="estimated",
+            freshness_status="current",
+        ))
+
+        evidence.append(EvidenceItem(
+            evidence_id=uuid4(),
+            category="pricing",
+            claim_type="tco_breakdown",
+            title=f"Red Hat AI Subscription: {gpu_count}x {gpu_type}",
+            summary=(
+                f"Red Hat AI Inference (Premium): ${rh_sub['list_price_per_gpu_annual_usd']:,}/GPU/yr × "
+                f"{gpu_count} GPUs = ${rh_sub['list_price_per_gpu_annual_usd'] * gpu_count:,}/yr "
+                f"(${rh_monthly:,.0f}/month). "
+                f"Alternative: RHAIE per-node at ${rh_sub['alternatives']['rhaie_per_node_annual_usd']:,}/yr."
+            ),
+            source_url=rh_sub["source_url"],
+            source_domain="redhat.com",
+            publisher="Red Hat",
+            retrieved_at=datetime.now(UTC),
+            hardware_signature=f"{gpu_count}x{gpu_type}",
+            source_tier="primary",
+            verification_level="reported",
+            freshness_status="current",
+        ))
+
+        perf = ref_config.get("performance")
+        if perf:
+            token_scale = gpu_count / ref_config["gpu_count"]
+            est_tokens_b = perf["conservative_monthly_tokens_billion"] * token_scale
+            evidence.append(EvidenceItem(
+                evidence_id=uuid4(),
+                category="pricing",
+                claim_type="capacity",
+                title=f"Estimated Capacity: {gpu_count}x {gpu_type}",
+                summary=(
+                    f"Est. ~{est_tokens_b:.1f}B tokens/month "
+                    f"({perf['input_output_ratio']} input/output ratio). "
+                    f"Cost per 1M tokens: ~${(total_monthly / (est_tokens_b * 1000)) * 1000:.4f}"
+                ),
+                source_url=perf["source_url"],
+                source_domain="mlcommons.org",
+                publisher="MLCommons",
+                retrieved_at=datetime.now(UTC),
+                hardware_signature=f"{gpu_count}x{gpu_type}",
+                source_tier="primary",
+                verification_level="estimated",
+                freshness_status="current",
+            ))
+
+        gpu_pricing = self._get_on_prem_gpu_pricing(gpu_type)
+        if gpu_pricing:
+            evidence.append(gpu_pricing)
+
+        return evidence
+
+    def _calc_power_cost(
+        self,
+        gpu_type: str,
+        gpu_count: int,
+        scaling: dict[str, Any],
+        power_ref: dict[str, Any],
+    ) -> float:
+        """Calculate power & cooling cost, using per-GPU power from scaling factors if available."""
+        scaling_key = _resolve_scaling_key(gpu_type)
+        kw = scaling.get("power_kw_per_gpu", {}).get(
+            scaling_key, power_ref["kw_per_gpu"]
+        )
+        return (
+            gpu_count * kw * power_ref["pue_factor"]
+            * power_ref["hours_per_month"] * power_ref["electricity_rate_per_kwh_usd"]
+        )
+
+    def _find_closest_reference(
+        self,
+        ref_configs: dict[str, Any],
+        gpu_type: str,
+        gpu_count: int,
+    ) -> dict[str, Any] | None:
+        """Find the closest matching reference configuration."""
+        normalized = gpu_type.upper().replace(" ", "-")
+        for _key, config in ref_configs.items():
+            if normalized in config.get("gpu_type", "").upper():
+                return config
+        for _key, config in ref_configs.items():
+            return config
+        return None
+
+    def _build_scaled_tco_evidence(
+        self,
+        gpu_type: str,
+        gpu_count: int,
+        scaling: dict[str, Any],
+        sources: dict[str, Any],
+    ) -> EvidenceItem:
+        """Build estimated TCO for GPU types without a reference config."""
+        scaling_key = _resolve_scaling_key(gpu_type)
+        hw_ratio = scaling.get("hardware_cost_ratio", {}).get(scaling_key, 1.0)
+        ref_hw_total = 397801
+        hw_monthly = (ref_hw_total * hw_ratio * gpu_count / 8) / 36
+
+        kw = scaling.get("power_kw_per_gpu", {}).get(scaling_key, 1.0)
+        power_monthly = gpu_count * kw * 1.35 * 720 * 0.07
+        colo_monthly = gpu_count * 150
+        staff_monthly = 6000
+        rh_monthly = (2500 * gpu_count) / 12
+        total = hw_monthly + power_monthly + colo_monthly + staff_monthly + rh_monthly
+
+        return EvidenceItem(
+            evidence_id=uuid4(),
+            category="pricing",
+            claim_type="tco",
+            title=f"On-Premises TCO (estimated): {gpu_count}x {gpu_type}",
+            summary=(
+                f"Estimated TCO for {gpu_count}x {gpu_type}: "
+                f"Hardware: ${hw_monthly:,.0f}; Power: ${power_monthly:,.0f}; "
+                f"Colo: ${colo_monthly:,.0f}; Staff: ${staff_monthly:,.0f}; "
+                f"RH AI Inference: ${rh_monthly:,.0f}; "
+                f"Total: ${total:,.0f}/month (scaled from H100 reference)"
+            ),
+            source_url=sources.get("lenovo_tco_2026", {}).get("url", ""),
+            source_domain="lenovopress.lenovo.com",
+            publisher="Lenovo / AMCompute / Red Hat",
+            retrieved_at=datetime.now(UTC),
+            hardware_signature=f"{gpu_count}x{gpu_type}",
+            source_tier="secondary",
+            verification_level="estimated",
+            freshness_status="current",
+        )
+
     def get_gpu_specs(self, gpu_type: str) -> dict[str, Any] | None:
         """Get hardware specifications for a GPU type."""
         normalized = gpu_type.upper().replace(" ", "-")
-        for key, specs in self._on_prem_data.items():
+        for key, specs in self._gpu_specs.items():
             if normalized in key.upper() or key.upper() in normalized:
                 return specs
-        for _key, specs in self._on_prem_data.items():
+        for _key, specs in self._gpu_specs.items():
             if gpu_type.upper() in specs["gpu_name"].upper():
                 return specs
         return None
 
     def get_available_gpus(self) -> list[str]:
         """List all known GPU types."""
-        return list(self._on_prem_data.keys())
+        return list(self._gpu_specs.keys())
 
     def get_cloud_instances_for_gpu(
         self, gpu_type: str, min_gpu_count: int = 1
@@ -549,8 +460,8 @@ class PricingConnector:
             freshness_status="current",
         )
 
-    def _get_on_prem_pricing(self, gpu_type: str) -> EvidenceItem | None:
-        """Get on-premises pricing evidence for a GPU type."""
+    def _get_on_prem_gpu_pricing(self, gpu_type: str) -> EvidenceItem | None:
+        """Get on-premises GPU hardware pricing evidence."""
         specs = self.get_gpu_specs(gpu_type)
         if not specs:
             return None

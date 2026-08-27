@@ -31,6 +31,11 @@ class UpdateWorkloadRequest(BaseModel):
     constraints: dict[str, Any] | None = None
 
 
+class SaveRecommendationRequest(BaseModel):
+    recommendation: dict[str, Any]
+    view_model: dict[str, Any]
+
+
 class DesignSessionResponse(BaseModel):
     session_id: UUID
     title: str | None
@@ -45,8 +50,39 @@ class DesignSessionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DesignSessionDetailResponse(BaseModel):
+    session_id: UUID
+    title: str | None
+    status: str
+    model_repo_id: str | None
+    model_revision: str | None
+    current_step: int
+    state_snapshot: dict[str, Any] | None = None
+    result_snapshot: dict[str, Any] | None = None
+    completed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+    version: int
+
+    model_config = {"from_attributes": True}
+
+
+class DesignSessionListItem(BaseModel):
+    session_id: UUID
+    title: str | None
+    status: str
+    model_repo_id: str | None
+    completed_at: datetime | None = None
+    created_at: datetime
+    gpu_config: str | None = None
+    memory_utilization: str | None = None
+    fits: bool | None = None
+
+    model_config = {"from_attributes": True}
+
+
 class DesignListResponse(BaseModel):
-    items: list[DesignSessionResponse]
+    items: list[DesignSessionListItem]
     total: int
 
 

@@ -195,6 +195,11 @@ class HuggingFaceConnector:
             if info_params is not None:
                 arch = arch.model_copy(update={"parameter_count_total": info_params})
 
+        # Get checkpoint size from safetensors metadata or model_info
+        checkpoint_size = await self._get_checkpoint_size(repo_id, revision, loop)
+        if checkpoint_size:
+            arch = arch.model_copy(update={"checkpoint_size_bytes": checkpoint_size})
+
         if gen_config and arch.max_position_embeddings is None and "max_length" in gen_config:
             arch = arch.model_copy(
                 update={"max_position_embeddings": gen_config["max_length"]}
@@ -248,6 +253,10 @@ class HuggingFaceConnector:
         )
         sliding_window = effective.get("sliding_window")
 
+        # MLA (Multi-head Latent Attention) — DeepSeek-V3, GLM-5.2, etc.
+        kv_lora_rank = effective.get("kv_lora_rank")
+        qk_rope_head_dim = effective.get("qk_rope_head_dim")
+
         num_experts_total = (
             effective.get("num_local_experts")
             or effective.get("num_experts")
@@ -267,6 +276,30 @@ class HuggingFaceConnector:
         attention_layer_count = None
         linear_attention_layer_count = None
         state_space_layer_count = None
+        sliding_attention_layers = None
+        full_attention_layers = None
+        global_head_dim = None
+        num_global_kv_heads = None
+
+        # Detect hybrid attention from layer_types (Gemma 4 style)
+        layer_types = effective.get("layer_types", [])
+        if layer_types and num_hidden_layers:
+            from collections import Counter
+            type_counts = Counter(str(t).lower() for t in layer_types)
+            sliding_count = sum(
+                v for k, v in type_counts.items()
+                if "sliding" in k
+            )
+            full_count = sum(
+                v for k, v in type_counts.items()
+                if "full" in k or "global" in k
+            )
+            if sliding_count > 0 and full_count > 0:
+                sliding_attention_layers = sliding_count
+                full_attention_layers = full_count
+                global_head_dim = effective.get("global_head_dim")
+                num_global_kv_heads = effective.get("num_global_key_value_heads")
+
         if architecture_type == "hybrid":
             attn_pattern = effective.get("attn_layer_period") or effective.get(
                 "attention_layer_period"
@@ -275,13 +308,13 @@ class HuggingFaceConnector:
                 attention_layer_count = num_hidden_layers // attn_pattern
                 state_space_layer_count = num_hidden_layers - attention_layer_count
             else:
-                layer_types = effective.get("layers_block_type", [])
-                if layer_types:
+                block_types = effective.get("layers_block_type", [])
+                if block_types:
                     attention_layer_count = sum(
-                        1 for t in layer_types if "attention" in t.lower()
+                        1 for t in block_types if "attention" in t.lower()
                     )
                     state_space_layer_count = sum(
-                        1 for t in layer_types if "mamba" in t.lower() or "ssm" in t.lower()
+                        1 for t in block_types if "mamba" in t.lower() or "ssm" in t.lower()
                     )
 
         vision_encoder_parameters = None
@@ -308,6 +341,12 @@ class HuggingFaceConnector:
             head_dim=head_dim,
             max_position_embeddings=max_position_embeddings,
             sliding_window=sliding_window,
+            sliding_attention_layers=sliding_attention_layers,
+            full_attention_layers=full_attention_layers,
+            global_head_dim=global_head_dim,
+            num_global_kv_heads=num_global_kv_heads,
+            kv_lora_rank=kv_lora_rank,
+            qk_rope_head_dim=qk_rope_head_dim,
             attention_layer_count=attention_layer_count,
             linear_attention_layer_count=linear_attention_layer_count,
             state_space_layer_count=state_space_layer_count,
@@ -331,6 +370,14 @@ class HuggingFaceConnector:
                 return "hybrid"
             if name in _MOE_ARCHITECTURES:
                 return "moe"
+        # Pattern-based fallback for unlisted architectures
+        import re
+        for name in arch_names:
+            lower = name.lower()
+            if re.search(r"(moe|expert|exp(?=for))", lower):
+                return "moe"
+            if "conditional" in lower and any(k in lower for k in ("vl", "vision", "llava", "image")):
+                return "multimodal"
         if arch_names:
             return "dense"
         return "unknown"
@@ -461,11 +508,29 @@ class HuggingFaceConnector:
         if isinstance(quant_config, dict) and quant_config:
             method = quant_config.get("quant_method")
             bits = quant_config.get("bits")
+            # Detect NVFP4 / mixed precision from config
+            if method == "fp8" and "nvfp4" in repo_id.lower():
+                return "nvfp4_fp8_mixed", "nvfp4"
+            if method == "compressed-tensors":
+                # llm-compressor style: check config_groups for actual bits
+                config_groups = quant_config.get("config_groups", {})
+                precisions = set()
+                for group_info in config_groups.values():
+                    if isinstance(group_info, dict):
+                        w_scheme = group_info.get("weights", {})
+                        if isinstance(w_scheme, dict):
+                            wbits = w_scheme.get("num_bits")
+                            wtype = w_scheme.get("type", "")
+                            if wbits:
+                                precisions.add(f"{wtype}{wbits}" if wtype else f"int{wbits}")
+                if precisions:
+                    return method, "+".join(sorted(precisions))
             precision = f"int{bits}" if bits else None
             return method, precision
 
         repo_lower = repo_id.lower()
         quant_patterns = {
+            "nvfp4": ("nvfp4", "nvfp4"),
             "awq": ("awq", "int4"),
             "gptq": ("gptq", "int4"),
             "gguf": ("gguf", None),
@@ -479,6 +544,31 @@ class HuggingFaceConnector:
                 return method, precision
 
         return None, None
+
+    async def _get_checkpoint_size(
+        self, repo_id: str, revision: str, loop: Any
+    ) -> int | None:
+        """Get total checkpoint file size from model_info siblings."""
+        try:
+            from huggingface_hub import model_info as get_model_info
+            info = await loop.run_in_executor(
+                None,
+                partial(
+                    get_model_info, repo_id, revision=revision,
+                    token=self._token, files_metadata=True,
+                ),
+            )
+            total = 0
+            siblings = getattr(info, "siblings", []) or []
+            for sibling in siblings:
+                fname = getattr(sibling, "rfilename", "") or ""
+                if fname.endswith((".safetensors", ".bin")):
+                    size = getattr(sibling, "size", None)
+                    if size and isinstance(size, int):
+                        total += size
+            return total if total > 0 else None
+        except Exception:
+            return None
 
     def _detect_weight_format(self, config: dict[str, Any]) -> str | None:
         """Detect weight storage format from config."""

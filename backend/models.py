@@ -20,6 +20,10 @@ class DesignSessionORM(Base):
     model_revision: Mapped[str | None] = mapped_column(String(255), nullable=True)
     current_step: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     state_snapshot: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    result_snapshot: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

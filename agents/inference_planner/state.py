@@ -37,6 +37,9 @@ class PlannerState(MessagesState):
     # Validation
     validation_report: dict[str, Any] | None
 
+    # Model analysis (LLM-interpreted, user-confirmed)
+    model_analysis: dict[str, Any] | None
+
     # Workload (from HITL)
     workload_profile: dict[str, Any] | None
 

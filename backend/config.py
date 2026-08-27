@@ -20,7 +20,14 @@ class Settings(BaseSettings):
     verify_ssl: bool = True
 
     mlflow_tracking_uri: str = "http://localhost:5001"
+    mlflow_tracking_token: str = ""
+    mlflow_tracking_insecure_tls: bool = False
+    mlflow_experiment_name: str = "inference-design-planner"
+    mlflow_workspace: str = ""
     prometheus_enabled: bool = True
+
+    anthropic_api_key: str = ""
+    golden_model_name: str = "claude-opus-4-6-20250826"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

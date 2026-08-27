@@ -34,6 +34,9 @@ class EvidenceItem(BaseModel, extra="forbid"):
         "model_strength",
         "limitation",
         "price",
+        "tco",
+        "tco_breakdown",
+        "capacity",
     ]
     title: str
     summary: str
@@ -47,7 +50,7 @@ class EvidenceItem(BaseModel, extra="forbid"):
     hardware_signature: str | None = None
     workload_signature: str | None = None
     raw_excerpt_hash: str | None = None
-    source_tier: Literal["primary", "official_secondary", "community"]
-    verification_level: Literal["verified", "reported", "inferred", "unknown"]
+    source_tier: Literal["primary", "official_secondary", "secondary", "community"]
+    verification_level: Literal["verified", "reported", "estimated", "inferred", "unknown"]
     freshness_status: str | None = None
     parser_warnings: list[str] = []

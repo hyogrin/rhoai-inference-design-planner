@@ -109,6 +109,40 @@ _KNOWN_RHOAI_VERSIONS: dict[str, dict[str, Any]] = {
             "prefix_aware_routing": "tp",
         },
     },
+    "3.4": {
+        "vllm_version": "0.18.2",
+        "kserve_version": "0.15",
+        "llmd_version": "0.3.0",
+        "features": {
+            "tensor_parallel": "ga",
+            "pipeline_parallel": "ga",
+            "expert_parallel": "ga",
+            "prefix_caching": "ga",
+            "chunked_prefill": "ga",
+            "speculative_decoding": "ga",
+            "fp8_quantization": "ga",
+            "lora_serving": "ga",
+            "llmd": "ga",
+            "prefix_aware_routing": "ga",
+        },
+    },
+    "3.5": {
+        "vllm_version": "0.24.0",
+        "kserve_version": "0.16",
+        "llmd_version": "0.4.0",
+        "features": {
+            "tensor_parallel": "ga",
+            "pipeline_parallel": "ga",
+            "expert_parallel": "ga",
+            "prefix_caching": "ga",
+            "chunked_prefill": "ga",
+            "speculative_decoding": "ga",
+            "fp8_quantization": "ga",
+            "lora_serving": "ga",
+            "llmd": "ga",
+            "prefix_aware_routing": "ga",
+        },
+    },
 }
 
 _LIVE_FETCH_TIMEOUT = 15
@@ -272,13 +306,17 @@ class RhoaiCompatibilityConnector:
         now = datetime.now(UTC)
         evidence: list[EvidenceItem] = []
 
+        matrix_ver = matches[0].get("matrix_version", "unknown") if matches else self._load_local_matrix().get("matrix_version", "unknown")
+
         if matches:
             gpu_info = []
             for m in matches[:5]:
                 gpu_str = m.get("supported_gpus", "")
                 status = m.get("status", "")
                 name = m.get("model", "")
-                vram = m.get("min_vram", "")
+                vram = m.get("min_vram", m.get("min_vram_gb", "?"))
+                if isinstance(vram, (int, float)):
+                    vram = f"{vram} GB"
                 gpu_info.append(
                     f"  • {name} [{status}] — {gpu_str} (min vRAM: {vram})"
                 )
@@ -288,10 +326,10 @@ class RhoaiCompatibilityConnector:
                     evidence_id=uuid4(),
                     category="platform_compatibility",
                     claim_type="compatibility",
-                    title=f"Red Hat AI Validated Models — {model_repo_id}",
+                    title=f"Red Hat AI Validated Models (matrix v{matrix_ver}) — {model_repo_id}",
                     summary=(
                         f"Found {len(matches)} validated/enabled variant(s) in "
-                        f"Red Hat AI model support matrix:\n"
+                        f"Red Hat AI model support matrix (v{matrix_ver}):\n"
                         + "\n".join(gpu_info)
                     ),
                     source_url=_VALIDATED_MODELS_URL,
@@ -308,10 +346,10 @@ class RhoaiCompatibilityConnector:
                     evidence_id=uuid4(),
                     category="platform_compatibility",
                     claim_type="limitation",
-                    title=f"Model not in Red Hat AI validated matrix — {model_repo_id}",
+                    title=f"Model not in Red Hat AI validated matrix (v{matrix_ver}) — {model_repo_id}",
                     summary=(
                         f"Model '{model_repo_id}' was not found in the Red Hat AI "
-                        f"validated models support matrix. This doesn't mean it won't "
+                        f"validated models support matrix (v{matrix_ver}). This doesn't mean it won't "
                         f"work — it means it hasn't been officially tested and validated "
                         f"by Red Hat. Consider using a RedHatAI/ variant if available."
                     ),
@@ -347,7 +385,11 @@ class RhoaiCompatibilityConnector:
             logger.debug("Failed to fetch validated models matrix: %s", exc)
             return self._search_local_matrix(model_name, family_keywords)
 
-        return self._parse_matrix_matches(html_text, model_name, family_keywords)
+        matches = self._parse_matrix_matches(html_text, model_name, family_keywords)
+        if not matches:
+            logger.debug("Live matrix parse returned 0 matches; falling back to local matrix")
+            return self._search_local_matrix(model_name, family_keywords)
+        return matches
 
     def _parse_matrix_matches(
         self, html_text: str, model_name: str, family_keywords: list[str]
@@ -394,29 +436,38 @@ class RhoaiCompatibilityConnector:
     def _search_local_matrix(
         self, model_name: str, family_keywords: list[str]
     ) -> list[dict[str, str]]:
-        """Fallback: search against a hardcoded subset of the validated matrix."""
-        _KNOWN_VALIDATED: list[dict[str, str]] = [
-            {"model": "RedHatAI/Llama-3.1-8B-Instruct", "status": "Validated", "min_vram": "18.5 GB", "supported_gpus": "1XA100-40, 1XA100-80, 1XH100, 1XH200, 1XL4, 2XA100-40, 2XA100-80, 2XH100, 2XL4"},
-            {"model": "RedHatAI/Llama-3.3-70B-Instruct", "status": "Validated", "min_vram": "162.3 GB", "supported_gpus": "2XH200, 4XA100-80, 4XH100, 8XA100-40, 8XH100"},
-            {"model": "RedHatAI/Llama-3.3-70B-Instruct-FP8-dynamic", "status": "Validated", "min_vram": "83.6 GB", "supported_gpus": "1XH200, 2XH100, 4XA100-40, 4XA100-80, 4XH100, 8XA100-40, 8XA100-80, 8XH100"},
-            {"model": "RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic", "status": "Validated", "min_vram": "10.5 GB", "supported_gpus": "1XH200"},
-            {"model": "RedHatAI/Mistral-Small-3.1-24B-Instruct-2503-FP8-dynamic", "status": "Validated", "min_vram": "29.7 GB", "supported_gpus": "1XA100-80, 1XH100, 1XH200, 2XA100-40, 2XA100-80, 2XH100, 2XL4"},
-            {"model": "RedHatAI/granite-3.1-8b-instruct", "status": "Validated", "min_vram": "18.8 GB", "supported_gpus": "1XA100-40, 1XA100-80, 1XH100, 1XH200, 1XL4"},
-            {"model": "RedHatAI/Qwen2.5-7B-Instruct", "status": "Validated", "min_vram": "17.6 GB", "supported_gpus": "1XA100-40, 1XA100-80, 1XH100, 1XH200, 1XL4"},
-            {"model": "RedHatAI/Qwen3-8B-FP8-dynamic", "status": "Validated", "min_vram": "10.9 GB", "supported_gpus": "1XA100-40, 1XH100, 1XH200, 1XL4, 2XA100-40, 2XH100, 2XH200, 2XL4"},
-        ]
+        """Fallback: search against the local JSON model matrix."""
+        matrix = self._load_local_matrix()
+        models = matrix.get("models", [])
+        matrix_ver = matrix.get("matrix_version", "unknown")
 
         matches = []
-        for entry in _KNOWN_VALIDATED:
-            entry_lower = entry["model"].lower()
+        for entry in models:
+            entry_model = entry.get("model", "")
+            entry_lower = entry_model.lower()
+
             if model_name in entry_lower:
-                matches.append(entry)
+                matches.append({**entry, "min_vram": f"{entry.get('min_vram_gb', '?')} GB", "matrix_version": matrix_ver})
             else:
                 keyword_hits = sum(1 for kw in family_keywords if kw in entry_lower)
                 if keyword_hits >= 2:
-                    matches.append(entry)
+                    matches.append({**entry, "min_vram": f"{entry.get('min_vram_gb', '?')} GB", "matrix_version": matrix_ver})
 
         return matches
+
+    @staticmethod
+    def _load_local_matrix() -> dict[str, Any]:
+        """Load the local model matrix JSON file."""
+        import json
+        from pathlib import Path
+
+        matrix_path = Path(__file__).parent / "data" / "rhai_3.4_model_matrix.json"
+        try:
+            with matrix_path.open() as f:
+                return json.load(f)
+        except Exception as exc:
+            logger.warning("Failed to load local model matrix: %s", exc)
+            return {"matrix_version": "unknown", "models": []}
 
     async def _resolve_version_data(self, rhoai_version: str) -> dict[str, Any] | None:
         """Return version data from cache, live fetch, or local fallback."""

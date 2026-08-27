@@ -62,6 +62,7 @@ const DISCOVERY_NODES = [
   "check_rhoai_compatibility",
   "fetch_pricing",
   "validate_discovery",
+  "interpret_model_config",
 ];
 
 export function useAgentStream() {
@@ -79,7 +80,17 @@ export function useAgentStream() {
   const abortRef = useRef<AbortController | null>(null);
 
   const startDiscovery = useCallback(
-    async (modelRepoId: string, modelRevision = "main") => {
+    async (
+      modelRepoId: string,
+      modelRevision = "main",
+      hardwareConfig?: {
+        platform: string;
+        gpuType: string;
+        gpuCount: number;
+        nvlink?: boolean;
+        infiniband?: boolean;
+      },
+    ) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -112,6 +123,13 @@ export function useAgentStream() {
             forwardedProps: {
               model_repo_id: modelRepoId,
               model_revision: modelRevision,
+              ...(hardwareConfig && {
+                platform: hardwareConfig.platform,
+                gpu_type: hardwareConfig.gpuType,
+                gpu_count: hardwareConfig.gpuCount,
+                nvlink: hardwareConfig.nvlink,
+                infiniband: hardwareConfig.infiniband,
+              }),
             },
           }),
         });

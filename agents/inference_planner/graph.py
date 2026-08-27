@@ -11,6 +11,8 @@ from agents.inference_planner.nodes.discovery import (
 )
 from agents.inference_planner.nodes.hitl import collect_workload_interrupt
 from agents.inference_planner.nodes.intake import normalize_intake
+from agents.inference_planner.nodes.model_analysis import interpret_model_config
+from agents.inference_planner.nodes.design_suggestion import generate_design_suggestion
 from agents.inference_planner.nodes.sizing import (
     calculate_cost,
     calculate_memory_capacity,
@@ -47,10 +49,12 @@ def build_graph() -> StateGraph:
     graph.add_node("check_rhoai_compatibility", check_rhoai_compatibility)
     graph.add_node("fetch_pricing", fetch_pricing)
     graph.add_node("validate_discovery", validate_discovery)
+    graph.add_node("interpret_model_config", interpret_model_config)
     graph.add_node("collect_workload_interrupt", collect_workload_interrupt)
     graph.add_node("calculate_memory_capacity", calculate_memory_capacity)
     graph.add_node("calculate_performance_forecast", calculate_performance_forecast)
     graph.add_node("calculate_cost", calculate_cost)
+    graph.add_node("generate_design_suggestion", generate_design_suggestion)
     graph.add_node("synthesize_recommendation", synthesize_recommendation)
     graph.add_node("verify_recommendation", verify_recommendation)
     graph.add_node("finalize_view_model", finalize_view_model)
@@ -82,16 +86,20 @@ def build_graph() -> StateGraph:
     graph.add_conditional_edges(
         "validate_discovery",
         route_readiness,
-        {"collect_workload": "collect_workload_interrupt", "blocked": END},
+        {"collect_workload": "interpret_model_config", "blocked": END},
     )
+
+    # Model analysis (LLM) then workload collection
+    graph.add_edge("interpret_model_config", "collect_workload_interrupt")
 
     # Sizing pipeline
     graph.add_edge("collect_workload_interrupt", "calculate_memory_capacity")
     graph.add_edge("calculate_memory_capacity", "calculate_performance_forecast")
     graph.add_edge("calculate_performance_forecast", "calculate_cost")
 
-    # Synthesis & verification
-    graph.add_edge("calculate_cost", "synthesize_recommendation")
+    # Design suggestion (LLM) then synthesis
+    graph.add_edge("calculate_cost", "generate_design_suggestion")
+    graph.add_edge("generate_design_suggestion", "synthesize_recommendation")
     graph.add_edge("synthesize_recommendation", "verify_recommendation")
     graph.add_edge("verify_recommendation", "finalize_view_model")
     graph.add_edge("finalize_view_model", END)

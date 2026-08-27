@@ -59,19 +59,53 @@ def _summarize_evidence(evidence_items: list[dict[str, Any]]) -> dict[str, Any]:
             "sources": list({i.get("source_url", "") for i in eval_items if i.get("source_url")})[:3],
         }
 
-    # RHOAI Compatibility
-    compat_items = by_category.get("rhoai_compatibility", [])
+    # RHOAI Compatibility (stored under category "platform_compatibility")
+    compat_items = by_category.get("platform_compatibility", [])
     if compat_items:
-        validated = any("validated" in (i.get("summary") or "").lower() for i in compat_items)
-        supported_gpus = []
+        validated = any(
+            i.get("claim_type") == "compatibility"
+            and "validated" in (i.get("title") or "").lower()
+            and "not" not in (i.get("title") or "").lower()
+            for i in compat_items
+        )
+
+        # Extract verified accelerator configs from validated matrix evidence
+        import re as _re
+        verified_accelerators: list[str] = []
+        matrix_version: str | None = None
+        min_vram_gb: str | None = None
+        matched_model: str | None = None
+
         for item in compat_items:
-            s = item.get("summary", "")
-            if "gpu" in s.lower() or "accelerator" in s.lower():
-                supported_gpus.append(s[:100])
+            title = item.get("title") or ""
+            s = item.get("summary") or ""
+
+            # Extract matrix version from title: "... (matrix v3.4.2) ..."
+            ver_match = _re.search(r"matrix v([\d.]+)", title)
+            if ver_match and not matrix_version:
+                matrix_version = ver_match.group(1)
+
+            # Parse accelerator list from validated matrix summary lines:
+            # "  • ModelName [Validated] — 1XA100-80, 2XH100 (min vRAM: 43.4 GB)"
+            for line in s.split("\n"):
+                bullet_match = _re.search(
+                    r"•\s*(\S+)\s*\[(\w+)\]\s*—\s*(.+?)\s*\(min vRAM:\s*([\d.]+)\s*GB\)",
+                    line,
+                )
+                if bullet_match:
+                    matched_model = bullet_match.group(1)
+                    gpu_list_str = bullet_match.group(3).strip()
+                    min_vram_gb = bullet_match.group(4)
+                    verified_accelerators = [g.strip() for g in gpu_list_str.split(",") if g.strip()]
+                    break
+
         summary["rhoai_compatibility"] = {
             "count": len(compat_items),
             "is_validated": validated,
-            "supported_gpus": supported_gpus[:3],
+            "matrix_version": matrix_version,
+            "matched_model": matched_model,
+            "verified_accelerators": verified_accelerators,
+            "min_vram_gb": min_vram_gb,
             "sources": list({i.get("source_url", "") for i in compat_items if i.get("source_url")})[:2],
         }
 
@@ -112,10 +146,12 @@ async def synthesize_recommendation(state: PlannerState) -> dict:
             params_raw = mem_est["parameters_billions"] * 1e9
 
     arch_type = "Unknown"
-    if model_architecture.get("architectures"):
-        arch_type = model_architecture["architectures"][0]
-    elif model_architecture.get("model_type"):
-        arch_type = model_architecture["model_type"]
+    if model_architecture.get("architecture_type") and model_architecture["architecture_type"] != "unknown":
+        arch_type = model_architecture["architecture_type"]
+        if model_architecture.get("architecture_names"):
+            arch_type = f"{arch_type} ({model_architecture['architecture_names'][0]})"
+    elif model_architecture.get("architecture_names"):
+        arch_type = model_architecture["architecture_names"][0]
 
     # Build model summary
     model_summary = {

@@ -19,8 +19,11 @@ from backend.repositories.design_session import OptimisticLockError
 from backend.schemas import (
     CreateDesignRequest,
     DesignListResponse,
+    DesignSessionDetailResponse,
+    DesignSessionListItem,
     DesignSessionResponse,
     ErrorResponse,
+    SaveRecommendationRequest,
     UpdateHardwareRequest,
     UpdateWorkloadRequest,
 )
@@ -55,6 +58,14 @@ def _configure_logging(log_level: str) -> None:
 async def lifespan(app: FastAPI):
     settings = get_settings()
     _configure_logging(settings.app_log_level)
+
+    from backend.tracing import init_tracing
+
+    try:
+        init_tracing()
+    except Exception as e:
+        logger.warning("mlflow_tracing_init_failed", error=str(e))
+
     await logger.ainfo("application_startup", env=settings.app_env)
 
     # Initialize PostgreSQL checkpointer for LangGraph
@@ -199,16 +210,16 @@ def _register_routes(app: FastAPI) -> None:
 
     @app.get(
         "/api/v1/designs/{design_id}",
-        response_model=DesignSessionResponse,
+        response_model=DesignSessionDetailResponse,
     )
     async def get_design(
         design_id: uuid.UUID,
         repo: DesignRepoDep,
-    ) -> DesignSessionResponse:
+    ) -> DesignSessionDetailResponse:
         design = await repo.get(design_id)
         if design is None:
             raise HTTPException(status_code=404, detail="Design session not found")
-        return _to_response(design)
+        return _to_detail_response(design)
 
     @app.delete("/api/v1/designs/{design_id}", status_code=204)
     async def delete_design(
@@ -218,6 +229,108 @@ def _register_routes(app: FastAPI) -> None:
         deleted = await repo.delete(design_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Design session not found")
+
+    @app.put(
+        "/api/v1/designs/{design_id}/save",
+        response_model=DesignSessionDetailResponse,
+    )
+    async def save_recommendation(
+        design_id: uuid.UUID,
+        request_body: SaveRecommendationRequest,
+        repo: DesignRepoDep,
+    ) -> DesignSessionDetailResponse:
+        from datetime import datetime, timezone
+
+        design = await repo.get(design_id)
+        if design is None:
+            raise HTTPException(status_code=404, detail="Design session not found")
+
+        result_data = {
+            "recommendation": request_body.recommendation,
+            "view_model": request_body.view_model,
+            "saved_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        updated = await repo.update(
+            design_id,
+            {
+                "result_snapshot": result_data,
+                "completed_at": datetime.now(timezone.utc),
+                "status": "completed",
+            },
+            expected_version=design.version,
+        )
+        await logger.ainfo(
+            "recommendation_saved",
+            session_id=str(design_id),
+            model_repo_id=design.model_repo_id,
+        )
+        return _to_detail_response(updated)
+
+    @app.post(
+        "/api/v1/recommendations",
+        response_model=DesignSessionDetailResponse,
+        status_code=201,
+    )
+    async def create_recommendation(
+        request_body: SaveRecommendationRequest,
+        repo: DesignRepoDep,
+    ) -> DesignSessionDetailResponse:
+        """Create a new saved recommendation (no prior design session required)."""
+        from datetime import datetime, timezone
+
+        view_model = request_body.view_model
+        sections = view_model.get("sections", [])
+
+        model_repo_id = None
+        title = None
+        for section in sections:
+            if isinstance(section, dict) and section.get("id") == "model_summary":
+                data = section.get("data", {})
+                model_repo_id = data.get("repo_id")
+                title = f"Design: {model_repo_id}" if model_repo_id else None
+                break
+
+        now = datetime.now(timezone.utc)
+        result_data = {
+            "recommendation": request_body.recommendation,
+            "view_model": request_body.view_model,
+            "saved_at": now.isoformat(),
+        }
+
+        session_data = {
+            "model_repo_id": model_repo_id,
+            "title": title or "Saved Recommendation",
+            "status": "completed",
+            "current_step": 5,
+            "result_snapshot": result_data,
+            "completed_at": now,
+        }
+        design = await repo.create(session_data)
+        await logger.ainfo(
+            "recommendation_created",
+            session_id=str(design.id),
+            model_repo_id=model_repo_id,
+        )
+        return _to_detail_response(design)
+
+    @app.get(
+        "/api/v1/recommendations",
+        response_model=DesignListResponse,
+    )
+    async def list_recommendations(
+        repo: DesignRepoDep,
+        limit: int = Query(default=50, ge=1, le=200),
+        offset: int = Query(default=0, ge=0),
+    ) -> DesignListResponse:
+        """List only completed/saved recommendations."""
+        items, total = await repo.list_all(
+            limit=limit, offset=offset, completed_only=True
+        )
+        return DesignListResponse(
+            items=[_to_list_item(item) for item in items],
+            total=total,
+        )
 
     @app.put(
         "/api/v1/designs/{design_id}/hardware",
@@ -270,10 +383,13 @@ def _register_routes(app: FastAPI) -> None:
         repo: DesignRepoDep,
         limit: int = Query(default=50, ge=1, le=200),
         offset: int = Query(default=0, ge=0),
+        completed: bool = Query(default=False),
     ) -> DesignListResponse:
-        items, total = await repo.list_all(limit=limit, offset=offset)
+        items, total = await repo.list_all(
+            limit=limit, offset=offset, completed_only=completed
+        )
         return DesignListResponse(
-            items=[_to_response(item) for item in items],
+            items=[_to_list_item(item) for item in items],
             total=total,
         )
 
@@ -329,6 +445,56 @@ def _to_response(design) -> DesignSessionResponse:
         created_at=design.created_at,
         updated_at=design.updated_at,
         version=design.version,
+    )
+
+
+def _to_detail_response(design) -> DesignSessionDetailResponse:
+    return DesignSessionDetailResponse(
+        session_id=design.id,
+        title=design.title,
+        status=design.status,
+        model_repo_id=design.model_repo_id,
+        model_revision=design.model_revision,
+        current_step=design.current_step,
+        state_snapshot=design.state_snapshot,
+        result_snapshot=design.result_snapshot,
+        completed_at=design.completed_at,
+        created_at=design.created_at,
+        updated_at=design.updated_at,
+        version=design.version,
+    )
+
+
+def _to_list_item(design) -> DesignSessionListItem:
+    result = design.result_snapshot or {}
+    view_model = result.get("view_model", {})
+    sections = view_model.get("sections", [])
+
+    gpu_config = None
+    memory_utilization = None
+    fits = None
+
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        sid = section.get("id")
+        data = section.get("data", {})
+        if sid == "deployment_config" and data:
+            gpu_config = f"{data.get('gpu_count', '?')}× {data.get('gpu_type', '?')}"
+        if sid == "memory_estimate" and data:
+            memory_utilization = f"{data.get('utilization_pct', '?')}%"
+            fits = data.get("fits")
+
+    return DesignSessionListItem(
+        session_id=design.id,
+        title=design.title,
+        status=design.status,
+        model_repo_id=design.model_repo_id,
+        completed_at=design.completed_at,
+        created_at=design.created_at,
+        gpu_config=gpu_config,
+        memory_utilization=memory_utilization,
+        fits=fits,
     )
 
 
@@ -415,10 +581,28 @@ async def _stream_agui(
     else:
         model_repo_id = forwarded_props.get("model_repo_id", query)
         model_revision = forwarded_props.get("model_revision", "main")
+
+        platform = forwarded_props.get("platform", "on-premise")
+        platform_to_env = {
+            "on-premise": "on_prem",
+            "aws": "aws",
+            "azure": "azure",
+            "gcp": "gcp",
+        }
+        environment_type = platform_to_env.get(platform, "on_prem")
+
+        hardware_inventory: dict = {"environment_type": environment_type}
+        if forwarded_props.get("gpu_type"):
+            gpu_raw = forwarded_props["gpu_type"]
+            hardware_inventory["gpu_type"] = gpu_raw.split("-")[0] if "-" in gpu_raw else gpu_raw
+        if forwarded_props.get("gpu_count"):
+            hardware_inventory["gpu_count"] = forwarded_props["gpu_count"]
+
         graph_input = {
             "session_id": thread_id[:12],
             "model_repo_id": model_repo_id,
             "model_revision": model_revision,
+            "hardware_inventory": hardware_inventory,
             "current_phase": "intake",
             "current_step": 1,
             "phase_history": [],

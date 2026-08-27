@@ -90,6 +90,11 @@ async def finalize_view_model(state: PlannerState) -> dict:
                 "title": "Performance Forecast",
                 "data": rec.get("performance_forecast", {}),
             },
+            {
+                "id": "design_suggestion",
+                "title": "Inference Design Suggestion",
+                "data": rec.get("design_suggestion", {}),
+            },
         ],
         "verification": rec.get("verification", {}),
     }

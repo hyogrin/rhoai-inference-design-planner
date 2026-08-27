@@ -34,7 +34,13 @@ export function DesignWizard() {
   const handleStartDiscovery = () => {
     if (!modelRepoId.trim()) return;
     setCurrentStep(2);
-    startDiscovery(modelRepoId.trim(), "main");
+    startDiscovery(modelRepoId.trim(), "main", {
+      platform: platform || "on-premise",
+      gpuType: selectedGpu || "",
+      gpuCount,
+      nvlink,
+      infiniband,
+    });
   };
 
   const handleSubmitWorkload = (workloadData: Record<string, unknown> | import("./steps/WorkloadProfileStep").WorkloadConfig) => {
@@ -134,6 +140,7 @@ export function DesignWizard() {
             agentState={agentState}
             selectedGpu={selectedGpu}
             gpuCount={gpuCount}
+            modelRepoId={modelRepoId}
           />
         )}
         {currentStep === 4 && (
@@ -168,41 +175,43 @@ export function DesignWizard() {
           Step {currentStep} of {STEPS.length}
         </span>
 
-        <button
-          onClick={goNext}
-          disabled={
-            currentStep === 5 ||
-            isDiscovering ||
-            (currentStep === 1 && !modelRepoId.trim()) ||
-            (currentStep === 2 && !canProceedFromStep2)
-          }
-          className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
-            currentStep === 5 ||
+        {currentStep >= 4 ? (
+          <div className="w-[88px]" />
+        ) : (
+          <button
+            onClick={goNext}
+            disabled={
               isDiscovering ||
               (currentStep === 1 && !modelRepoId.trim()) ||
               (currentStep === 2 && !canProceedFromStep2)
-              ? "cursor-not-allowed bg-[var(--muted)] text-[var(--muted-foreground)] opacity-50"
-              : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
-          )}
-        >
-          {isDiscovering ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Analyzing...
-            </>
-          ) : currentStep === 1 ? (
-            <>
-              Start Analysis
-              <ChevronRight className="h-4 w-4" />
-            </>
-          ) : (
-            <>
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </>
-          )}
-        </button>
+            }
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
+              isDiscovering ||
+                (currentStep === 1 && !modelRepoId.trim()) ||
+                (currentStep === 2 && !canProceedFromStep2)
+                ? "cursor-not-allowed bg-[var(--muted)] text-[var(--muted-foreground)] opacity-50"
+                : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
+            )}
+          >
+            {isDiscovering ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : currentStep === 1 ? (
+              <>
+                Start Analysis
+                <ChevronRight className="h-4 w-4" />
+              </>
+            ) : (
+              <>
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -23,15 +23,21 @@ class DesignSessionRepository:
         return result.scalar_one_or_none()
 
     async def list_all(
-        self, limit: int = 50, offset: int = 0
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        completed_only: bool = False,
     ) -> tuple[list[DesignSessionORM], int]:
-        count_stmt = select(DesignSessionORM)
-        count_result = await self._db.execute(count_stmt)
+        base = select(DesignSessionORM)
+        if completed_only:
+            base = base.where(DesignSessionORM.completed_at.isnot(None))
+
+        count_result = await self._db.execute(base)
         total = len(count_result.scalars().all())
 
         stmt = (
-            select(DesignSessionORM)
-            .order_by(DesignSessionORM.created_at.desc())
+            base.order_by(DesignSessionORM.completed_at.desc().nulls_last(),
+                          DesignSessionORM.created_at.desc())
             .limit(limit)
             .offset(offset)
         )

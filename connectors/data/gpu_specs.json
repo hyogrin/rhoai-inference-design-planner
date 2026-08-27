@@ -1,0 +1,112 @@
+{
+  "B200": {
+    "gpu_name": "NVIDIA B200",
+    "memory_gb": 192,
+    "bf16_tflops": 2250,
+    "fp8_tflops": 4500,
+    "memory_bandwidth_tbps": 8.0,
+    "tdp_watts": 1000,
+    "list_price_usd": 40000,
+    "typical_street_price_usd": 37000
+  },
+  "H200": {
+    "gpu_name": "NVIDIA H200 SXM",
+    "memory_gb": 141,
+    "bf16_tflops": 989,
+    "fp8_tflops": 1979,
+    "memory_bandwidth_tbps": 4.8,
+    "tdp_watts": 700,
+    "list_price_usd": 35000,
+    "typical_street_price_usd": 30000
+  },
+  "H100-SXM": {
+    "gpu_name": "NVIDIA H100 SXM",
+    "memory_gb": 80,
+    "bf16_tflops": 989,
+    "fp8_tflops": 1979,
+    "memory_bandwidth_tbps": 3.35,
+    "tdp_watts": 700,
+    "list_price_usd": 30000,
+    "typical_street_price_usd": 25000
+  },
+  "H100-PCIe": {
+    "gpu_name": "NVIDIA H100 PCIe",
+    "memory_gb": 80,
+    "bf16_tflops": 756,
+    "fp8_tflops": 1513,
+    "memory_bandwidth_tbps": 2.0,
+    "tdp_watts": 350,
+    "list_price_usd": 25000,
+    "typical_street_price_usd": 22000
+  },
+  "MI300X": {
+    "gpu_name": "AMD Instinct MI300X",
+    "memory_gb": 192,
+    "bf16_tflops": 1307,
+    "fp8_tflops": 2614,
+    "memory_bandwidth_tbps": 5.3,
+    "tdp_watts": 750,
+    "list_price_usd": 20000,
+    "typical_street_price_usd": 15000
+  },
+  "A100-SXM-80GB": {
+    "gpu_name": "NVIDIA A100 SXM 80GB",
+    "memory_gb": 80,
+    "bf16_tflops": 312,
+    "fp8_tflops": 0,
+    "memory_bandwidth_tbps": 2.0,
+    "tdp_watts": 400,
+    "list_price_usd": 15000,
+    "typical_street_price_usd": 10000
+  },
+  "A100-PCIe-80GB": {
+    "gpu_name": "NVIDIA A100 PCIe 80GB",
+    "memory_gb": 80,
+    "bf16_tflops": 312,
+    "fp8_tflops": 0,
+    "memory_bandwidth_tbps": 2.0,
+    "tdp_watts": 300,
+    "list_price_usd": 11000,
+    "typical_street_price_usd": 8000
+  },
+  "L4": {
+    "gpu_name": "NVIDIA L4",
+    "memory_gb": 24,
+    "bf16_tflops": 121,
+    "fp8_tflops": 242,
+    "memory_bandwidth_tbps": 0.3,
+    "tdp_watts": 72,
+    "list_price_usd": 2500,
+    "typical_street_price_usd": 2200
+  },
+  "L40S": {
+    "gpu_name": "NVIDIA L40S",
+    "memory_gb": 48,
+    "bf16_tflops": 362,
+    "fp8_tflops": 733,
+    "memory_bandwidth_tbps": 0.864,
+    "tdp_watts": 350,
+    "list_price_usd": 7500,
+    "typical_street_price_usd": 6500
+  },
+  "A10G": {
+    "gpu_name": "NVIDIA A10G",
+    "memory_gb": 24,
+    "bf16_tflops": 125,
+    "fp8_tflops": 0,
+    "memory_bandwidth_tbps": 0.6,
+    "tdp_watts": 150,
+    "list_price_usd": 3500,
+    "typical_street_price_usd": 2500
+  },
+  "T4": {
+    "gpu_name": "NVIDIA T4",
+    "memory_gb": 16,
+    "bf16_tflops": 65,
+    "fp8_tflops": 0,
+    "memory_bandwidth_tbps": 0.32,
+    "tdp_watts": 70,
+    "list_price_usd": 2000,
+    "typical_street_price_usd": 1500
+  }
+}
