@@ -18,17 +18,19 @@ spec:
         app: inference-design-planner
         component: backend
     spec:
+      imagePullSecrets:
+        - name: quay-pull-secret
       containers:
         - name: backend
           image: {{ .Values.backend.image }}
+          imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.backend.port }}
           envFrom:
+            - configMapRef:
+                name: planner-config
             - secretRef:
                 name: planner-secrets
-          env:
-            - name: DATABASE_URL
-              value: {{ .Values.env.DATABASE_URL }}
           resources:
             {{- toYaml .Values.backend.resources | nindent 12 }}
           readinessProbe:
@@ -49,6 +51,9 @@ kind: Service
 metadata:
   name: backend
   namespace: {{ .Values.namespace }}
+  labels:
+    app: inference-design-planner
+    component: backend
 spec:
   selector:
     app: inference-design-planner
@@ -56,3 +61,22 @@ spec:
   ports:
     - port: 8000
       targetPort: {{ .Values.backend.port }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: inference-planner-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: inference-design-planner
+    component: backend
+spec:
+  host: inference-planner-api.{{ .Values.domain }}
+  to:
+    kind: Service
+    name: backend
+  port:
+    targetPort: 8000
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

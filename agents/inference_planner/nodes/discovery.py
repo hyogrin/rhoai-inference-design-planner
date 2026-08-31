@@ -29,11 +29,11 @@ async def fetch_huggingface_metadata(state: PlannerState) -> dict[str, Any]:
     """Fetch model metadata from Hugging Face and parse architecture."""
     repo_id = state.get("model_repo_id", "")
     revision = state.get("model_revision") or "main"
-    token = state.get("hf_token") or os.getenv("HF_TOKEN")
+    token = state.get("hf_token") or os.getenv("HF_TOKEN") or None
 
-    if not repo_id:
+    if not repo_id or "/" not in repo_id or len(repo_id) > 200:
         return {
-            "error": "No model repo_id provided",
+            "error": f"Invalid model repo_id: '{repo_id[:80]}'" if repo_id else "No model repo_id provided",
             "phase_history": ["hf_metadata_skipped"],
         }
 
@@ -128,7 +128,7 @@ async def discover_redhat_evaluations(state: PlannerState) -> dict[str, Any]:
     if not repo_id:
         return {"phase_history": ["redhat_evaluations_skipped"]}
 
-    token = state.get("hf_token") or os.getenv("HF_TOKEN")
+    token = state.get("hf_token") or os.getenv("HF_TOKEN") or None
     connector = RedHatModelCardConnector(token=token)
 
     try:

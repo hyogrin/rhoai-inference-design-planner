@@ -28,6 +28,8 @@ def upgrade() -> None:
         sa.Column("model_revision", sa.String(255), nullable=True),
         sa.Column("current_step", sa.Integer(), nullable=False, server_default="1"),
         sa.Column("state_snapshot", postgresql.JSONB(), nullable=True),
+        sa.Column("result_snapshot", postgresql.JSONB(), nullable=True),
+        sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

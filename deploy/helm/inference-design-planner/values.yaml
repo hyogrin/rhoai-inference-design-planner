@@ -1,8 +1,9 @@
 namespace: inference-planner
+domain: apps.openshift-cluster.sandbox3031.opentlc.com
 
 backend:
   replicas: 1
-  image: quay.io/your-org/inference-design-planner-backend:latest
+  image: quay.io/rh-ee-hyochoi/inference-planner-backend:latest
   port: 8000
   resources:
     requests:
@@ -14,7 +15,7 @@ backend:
 
 frontend:
   replicas: 1
-  image: quay.io/your-org/inference-design-planner-frontend:latest
+  image: quay.io/rh-ee-hyochoi/inference-planner-frontend:latest
   port: 3000
   resources:
     requests:
@@ -28,6 +29,9 @@ postgresql:
   enabled: true
   image: postgres:15-alpine
   storage: 5Gi
+  user: planner
+  password: planner
+  database: inference_planner
   resources:
     requests:
       cpu: 100m
@@ -36,7 +40,23 @@ postgresql:
       cpu: 500m
       memory: 512Mi
 
-env:
-  DATABASE_URL: postgresql+asyncpg://planner:planner@postgresql:5432/inference_planner
-  OPENAI_BASE_URL: https://api.openai.com/v1
-  LLM_MODEL_NAME: gpt-4o
+config:
+  APP_ENV: production
+  APP_LOG_LEVEL: INFO
+  APP_CORS_ORIGINS: "https://inference-planner.apps.openshift-cluster.sandbox3031.opentlc.com"
+  LLM_MODEL_NAME: redhatai-gemma-4-12b-it
+  VERIFY_SSL: "false"
+  MLFLOW_TRACKING_URI: "https://rh-ai.apps.openshift-cluster.sandbox3031.opentlc.com/mlflow"
+  MLFLOW_TRACKING_INSECURE_TLS: "true"
+  MLFLOW_WORKSPACE: inference-planner
+  MLFLOW_EXPERIMENT_NAME: inference-design-planner
+  PROMETHEUS_ENABLED: "true"
+  SEARXNG_URL: "https://mcp-searxng-mcp-servers.apps.openshift-cluster.sandbox3031.opentlc.com"
+
+secret:
+  OPENAI_API_KEY: not-needed
+  OPENAI_BASE_URL: "https://gemma-12b-direct-demo.apps.openshift-cluster.sandbox3031.opentlc.com/v1"
+  DATABASE_URL: "postgresql+asyncpg://planner:planner@postgresql:5432/inference_planner"
+  DATABASE_URL_SYNC: "postgresql://planner:planner@postgresql:5432/inference_planner"
+  MLFLOW_TRACKING_TOKEN: "sha256~O31jEAEXquvNwOhtvzh5vcuef2uvyFegwjjiFgONRZA"
+  # HF_TOKEN: ""  # Set a valid token to access gated models

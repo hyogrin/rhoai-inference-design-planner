@@ -5,8 +5,13 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_AGENT_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_AGENT_URL=${NEXT_PUBLIC_AGENT_URL}
+
 COPY . .
-RUN npm run build
+RUN mkdir -p public && npm run build
 
 FROM node:20-alpine
 

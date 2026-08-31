@@ -145,6 +145,8 @@ async def interpret_model_config(state: PlannerState) -> dict[str, Any]:
                 },
             )
             response.raise_for_status()
+            if not response.content:
+                raise ValueError(f"LLM returned empty response (HTTP {response.status_code})")
             data = response.json()
             content = data["choices"][0]["message"]["content"]
             parsed = json.loads(content)

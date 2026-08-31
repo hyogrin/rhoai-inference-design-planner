@@ -38,6 +38,8 @@ export interface WorkloadInterrupt {
     default?: number | string;
   }>;
   message: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  model_analysis?: Record<string, any>;
 }
 
 export interface AgentState {

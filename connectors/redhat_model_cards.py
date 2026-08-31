@@ -58,8 +58,8 @@ class RedHatModelCardConnector:
     """Fetches and parses Red Hat AI model cards from Hugging Face."""
 
     def __init__(self, token: str | None = None) -> None:
-        self._api = HfApi(token=token)
-        self._token = token
+        self._api = HfApi(token=token or None)
+        self._token = token or None
 
     async def find_redhat_evidence(self, repo_id: str) -> list[EvidenceItem]:
         """Find benchmark/evaluation evidence from model cards.

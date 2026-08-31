@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock* README.md ./
 RUN uv sync --frozen --no-dev
 
 COPY domain/ domain/
@@ -24,6 +24,7 @@ WORKDIR /app
 COPY --from=builder /app /app
 
 ENV PATH="/app/.venv/bin:$PATH"
+ENV HF_HOME="/tmp/hf_cache"
 
 EXPOSE 8000
 

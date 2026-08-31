@@ -169,6 +169,8 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                 },
             )
             resp.raise_for_status()
+            if not resp.content:
+                raise ValueError(f"LLM returned empty response (HTTP {resp.status_code})")
             data = resp.json()
             suggestion_text = data["choices"][0]["message"]["content"].strip()
 

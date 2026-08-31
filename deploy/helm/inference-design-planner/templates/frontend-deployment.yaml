@@ -18,24 +18,37 @@ spec:
         app: inference-design-planner
         component: frontend
     spec:
+      imagePullSecrets:
+        - name: quay-pull-secret
       containers:
         - name: frontend
           image: {{ .Values.frontend.image }}
+          imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.frontend.port }}
-          env:
-            - name: NEXT_PUBLIC_API_URL
-              value: http://backend:8000
-            - name: NEXT_PUBLIC_AGENT_URL
-              value: http://backend:8000/agent
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: frontend
   namespace: {{ .Values.namespace }}
+  labels:
+    app: inference-design-planner
+    component: frontend
 spec:
   selector:
     app: inference-design-planner
@@ -47,9 +60,13 @@ spec:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: inference-design-planner
+  name: inference-planner
   namespace: {{ .Values.namespace }}
+  labels:
+    app: inference-design-planner
+    component: frontend
 spec:
+  host: inference-planner.{{ .Values.domain }}
   to:
     kind: Service
     name: frontend
@@ -57,3 +74,4 @@ spec:
     targetPort: 3000
   tls:
     termination: edge
+    insecureEdgeTerminationPolicy: Redirect

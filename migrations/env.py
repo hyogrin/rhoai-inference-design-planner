@@ -1,4 +1,5 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -11,6 +12,10 @@ from backend.models import DesignSessionORM  # noqa: F401 - ensure models regist
 
 config = context.config
 target_metadata = Base.metadata
+
+db_url = os.getenv("DATABASE_URL_SYNC") or os.getenv("DATABASE_URL")
+if db_url:
+    config.set_main_option("sqlalchemy.url", db_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

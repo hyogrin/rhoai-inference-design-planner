@@ -97,8 +97,8 @@ class HuggingFaceConnector:
     """Fetches and parses model metadata from Hugging Face Hub."""
 
     def __init__(self, token: str | None = None):
-        self._api = HfApi(token=token)
-        self._token = token
+        self._api = HfApi(token=token or None)
+        self._token = token or None
 
     async def fetch_model_identity(
         self, repo_id: str, revision: str = "main"
