@@ -2,6 +2,7 @@
 
 import { FileSearch, BookOpen, FlaskConical, Globe, ShieldCheck, Loader2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import type { AgentState, NodeStatus } from "@/lib/use-agent-stream";
 
 const EVIDENCE_SOURCES = [
@@ -118,6 +119,7 @@ interface EvidenceDiscoveryStepProps {
 }
 
 export function EvidenceDiscoveryStep({ agentState }: EvidenceDiscoveryStepProps) {
+  const { t } = useI18n();
   const { status, nodeStatuses, steps, error } = agentState;
 
   const completedCount = EVIDENCE_SOURCES.filter(
@@ -133,17 +135,16 @@ export function EvidenceDiscoveryStep({ agentState }: EvidenceDiscoveryStepProps
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Evidence Discovery</h2>
+        <h2 className="text-lg font-semibold">{t("step2.title")}</h2>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Gathering deployment evidence from multiple sources to inform
-          recommendations.
+          {t("step2.description")}
         </p>
       </div>
 
       {/* Progress Timeline */}
       <div className="rounded-xl border border-[var(--border)] p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-medium">Discovery Progress</h3>
+          <h3 className="font-medium">{t("step2.discoveryProgress")}</h3>
           <span
             className={cn(
               "rounded-full px-2.5 py-1 text-xs font-medium",
@@ -157,12 +158,12 @@ export function EvidenceDiscoveryStep({ agentState }: EvidenceDiscoveryStepProps
             )}
           >
             {isError
-              ? "Error"
+              ? t("step2.statusError")
               : isCompleted
-                ? "Complete"
+                ? t("step2.statusComplete")
                 : isRunning
-                  ? `${completedCount} / ${totalCount} complete`
-                  : "Waiting..."}
+                  ? `${completedCount} / ${totalCount} ${t("step2.statusRunning")}`
+                  : t("step2.statusWaiting")}
           </span>
         </div>
 
@@ -179,7 +180,7 @@ export function EvidenceDiscoveryStep({ agentState }: EvidenceDiscoveryStepProps
         {isRunning && (
           <div className="mt-3 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Analyzing model metadata and collecting evidence...
+            {t("step2.analyzing")}
           </div>
         )}
 
@@ -320,10 +321,10 @@ export function EvidenceDiscoveryStep({ agentState }: EvidenceDiscoveryStepProps
       {steps.length > 0 && (
         <div className="rounded-xl border border-[var(--border)] p-6">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-medium">Activity Log</h3>
+            <h3 className="text-sm font-medium">{t("step2.activityLog")}</h3>
             {agentState.totalEvidence > 0 && (
               <span className="rounded-full bg-[var(--primary)]/10 px-2.5 py-0.5 text-xs font-medium text-[var(--primary)]">
-                {agentState.totalEvidence} evidence items collected
+                {agentState.totalEvidence} {t("step2.evidenceCollected")}
               </span>
             )}
           </div>

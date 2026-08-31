@@ -16,6 +16,8 @@ import httpx
 from agents.inference_planner.prompts import (
     DESIGN_SUGGESTION_SYSTEM,
     DESIGN_SUGGESTION_USER,
+    LANGUAGE_INSTRUCTION,
+    LANGUAGE_NAMES,
 )
 from agents.inference_planner.state import PlannerState
 
@@ -115,6 +117,12 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
 
     ctx = _build_context(state)
     user_prompt = DESIGN_SUGGESTION_USER.format(**{k: str(v) for k, v in ctx.items()})
+
+    language = state.get("language", "en")
+    language_name = LANGUAGE_NAMES.get(language)
+    if language_name:
+        user_prompt += LANGUAGE_INSTRUCTION.format(language_name=language_name)
+
     session_id = state.get("session_id", "")
 
     if not api_key:

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import { MessageSquare, Database, Bot, Layers, Code, Send } from "lucide-react";
 import type { WorkloadInterrupt } from "@/lib/use-agent-stream";
 
@@ -56,6 +57,7 @@ export function WorkloadProfileStep({
   const [ttftMs, setTtftMs] = useState(500);
   const [tpotMs, setTpotMs] = useState(30);
   const [rhoaiVersion, setRhoaiVersion] = useState("3.5");
+  const { t } = useI18n();
 
   const selectedRhoai = RHOAI_VERSIONS.find((v) => v.version === rhoaiVersion)!;
 
@@ -128,13 +130,13 @@ export function WorkloadProfileStep({
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Workload Profile</h2>
+          <h2 className="text-lg font-semibold">{t("step4.title")}</h2>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            Waiting for evidence discovery to complete...
+            {t("step4.waitingDesc")}
           </p>
         </div>
         <div className="flex items-center justify-center rounded-xl border border-dashed border-[var(--border)] p-12 text-sm text-[var(--muted-foreground)]">
-          Complete evidence discovery to configure workload.
+          {t("step4.waitingPlaceholder")}
         </div>
       </div>
     );
@@ -143,9 +145,9 @@ export function WorkloadProfileStep({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Workload Profile</h2>
+        <h2 className="text-lg font-semibold">{t("step4.title")}</h2>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Define your deployment workload requirements.
+          {t("step4.description")}
         </p>
       </div>
 
@@ -165,11 +167,11 @@ export function WorkloadProfileStep({
       {/* Use Case Presets */}
       <div className="rounded-xl border border-[var(--border)] p-6">
         <div className="mb-1 flex items-center justify-between">
-          <h3 className="text-sm font-medium">Use Case Pattern</h3>
-          <span className="text-xs text-[var(--muted-foreground)]">Multi-select</span>
+          <h3 className="text-sm font-medium">{t("step4.useCasePattern")}</h3>
+          <span className="text-xs text-[var(--muted-foreground)]">{t("step4.multiSelect")}</span>
         </div>
         <p className="mb-4 text-xs text-[var(--muted-foreground)]">
-          Choose all applicable workload types.
+          {t("step4.useCaseHelp")}
         </p>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -204,7 +206,7 @@ export function WorkloadProfileStep({
         {selectedPresets.length > 1 && (
           <div className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-medium">Traffic Distribution</span>
+              <span className="text-xs font-medium">{t("step4.trafficDistribution")}</span>
               <span className={cn(
                 "text-xs font-bold",
                 allocationSum === 100 ? "text-[var(--success)]" : "text-[var(--warning)]"
@@ -238,13 +240,13 @@ export function WorkloadProfileStep({
 
       {/* Configuration Details */}
       <div className="rounded-xl border border-[var(--border)] p-6">
-        <h3 className="mb-4 font-medium">Service Requirements</h3>
+        <h3 className="mb-4 font-medium">{t("step4.serviceRequirements")}</h3>
 
         <div className="grid gap-5 sm:grid-cols-2">
           {/* Target End Users */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">
-              Target Number of End Users
+              {t("step4.targetUsers")}
             </label>
             <input
               type="number"
@@ -254,14 +256,14 @@ export function WorkloadProfileStep({
               className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
             />
             <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
-              Expected total number of users accessing the service
+              {t("step4.targetUsersHelp")}
             </p>
           </div>
 
           {/* Max Concurrent Requests */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">
-              Max Concurrent Requests
+              {t("step4.maxConcurrent")}
             </label>
             <input
               type="number"
@@ -271,14 +273,14 @@ export function WorkloadProfileStep({
               className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
             />
             <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
-              Peak simultaneous inference requests
+              {t("step4.maxConcurrentHelp")}
             </p>
           </div>
 
           {/* TTFT */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">
-              TTFT — Time To First Token (ms)
+              {t("step4.ttft")}
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -295,14 +297,14 @@ export function WorkloadProfileStep({
               </span>
             </div>
             <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
-              Time from request to first generated token (P95)
+              {t("step4.ttftHelp")}
             </p>
           </div>
 
           {/* TPOT */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">
-              TPOT — Time Per Output Token (ms)
+              {t("step4.tpot")}
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -319,14 +321,14 @@ export function WorkloadProfileStep({
               </span>
             </div>
             <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
-              Inter-token latency for streaming responses (P95)
+              {t("step4.tpotHelp")}
             </p>
           </div>
 
           {/* RHOAI Version */}
           <div className="sm:col-span-2">
             <label className="mb-1.5 block text-sm font-medium">
-              RHOAI Version
+              {t("step4.rhoaiVersion")}
             </label>
             <div className="flex gap-3">
               {RHOAI_VERSIONS.map((v) => (
@@ -351,7 +353,7 @@ export function WorkloadProfileStep({
               ))}
             </div>
             <p className="mt-1.5 text-[10px] text-[var(--muted-foreground)]">
-              RHOAI {selectedRhoai.version} ships with vLLM {selectedRhoai.vllm} — this determines available features and optimizations
+              {t("step4.rhoaiVersionHelp", { version: selectedRhoai.version, vllm: selectedRhoai.vllm })}
             </p>
           </div>
         </div>
@@ -360,7 +362,7 @@ export function WorkloadProfileStep({
       {/* Summary */}
       <div className="rounded-lg border border-dashed border-[var(--primary)]/30 bg-[var(--accent)] p-4">
         <h4 className="mb-2 text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
-          Configuration Summary
+          {t("step4.configSummary")}
         </h4>
         <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
           <div>
@@ -403,7 +405,7 @@ export function WorkloadProfileStep({
           )}
         >
           <Send className="h-4 w-4" />
-          Generate Recommendation
+          {t("step4.generateRecommendation")}
         </button>
       </div>
     </div>

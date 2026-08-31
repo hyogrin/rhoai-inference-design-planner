@@ -133,3 +133,16 @@ or deploying a larger/higher-precision model variant.
 NOT an arbitrary high number like 256.
 - If the model is NOT in the RHOAI validated matrix, state that a custom \
 ServingRuntime image and compatibility testing are required."""
+
+LANGUAGE_NAMES: dict[str, str] = {
+    "ko": "Korean",
+    "zh": "Chinese (Simplified)",
+    "ja": "Japanese",
+}
+
+LANGUAGE_INSTRUCTION = """
+
+IMPORTANT: Write your ENTIRE response in {language_name}.
+Use the same markdown structure (### headings, - bullet points) but write ALL content
+including section headings, explanations, and technical recommendations in {language_name}.
+Keep technical terms (GPU names, vLLM, RHOAI, TTFT, TPOT, TP, PP, NVLink, etc.) in English."""

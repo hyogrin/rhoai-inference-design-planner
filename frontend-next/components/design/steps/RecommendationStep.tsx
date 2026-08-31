@@ -19,6 +19,7 @@ import {
   List,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import type { AgentState } from "@/lib/use-agent-stream";
 
 interface RecommendationStepProps {
@@ -26,6 +27,7 @@ interface RecommendationStepProps {
 }
 
 export function RecommendationStep({ agentState }: RecommendationStepProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const isRunning = agentState.status === "running";
   const [copied, setCopied] = useState(false);
@@ -92,15 +94,15 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Recommendation</h2>
+          <h2 className="text-lg font-semibold">{t("step5.title")}</h2>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            Generating evidence-backed deployment recommendation...
+            {t("step5.generating")}
           </p>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-[var(--primary)]/20 bg-[var(--primary)]/5 p-6">
           <Loader2 className="h-5 w-5 animate-spin text-[var(--primary)]" />
           <span className="text-sm font-medium text-[var(--primary)]">
-            Computing sizing, cost, and performance forecast...
+            {t("step5.computing")}
           </span>
         </div>
         <SkeletonPanels />
@@ -113,9 +115,9 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Deployment Recommendation</h2>
+          <h2 className="text-lg font-semibold">{t("step5.title")}</h2>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            Evidence-backed sizing for {String(modelSummary?.repo_id || "your model")}
+            {t("step5.subtitle", { model: String(modelSummary?.repo_id || "your model") })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -127,12 +129,12 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
             {saved ? (
               <>
                 <Check className="h-3.5 w-3.5" />
-                Auto-saved
+                {t("step5.autoSaved")}
               </>
             ) : saving ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Saving...
+                {t("step5.saving")}
               </>
             ) : null}
           </span>
@@ -141,7 +143,7 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
             className="flex items-center gap-2 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/5 px-4 py-2.5 text-sm font-medium text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-all"
           >
             <List className="h-4 w-4" />
-            View All
+            {t("step5.viewAll")}
           </button>
           <button
             onClick={handleExport}
@@ -155,12 +157,12 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
             {copied ? (
               <>
                 <Check className="h-4 w-4" />
-                Copied to clipboard
+                {t("step5.copiedClipboard")}
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4" />
-                Export Prompt
+                {t("step5.exportPrompt")}
               </>
             )}
           </button>
@@ -172,7 +174,7 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
           <div className="mb-2 flex items-center gap-2 text-amber-600">
             <AlertTriangle className="h-4 w-4" />
-            <span className="text-sm font-medium">Attention</span>
+            <span className="text-sm font-medium">{t("step5.attention")}</span>
           </div>
           <ul className="space-y-1 text-xs text-amber-700">
             {verification.warnings.map((w, i) => (
@@ -210,12 +212,13 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
 // --- Sub-components ---
 
 function ModelOverviewCard({ data }: { data: Record<string, unknown> | undefined }) {
+  const { t } = useI18n();
   if (!data) return null;
   return (
     <div className="rounded-xl border border-[var(--border)] p-5">
       <div className="mb-4 flex items-center gap-2">
         <Cpu className="h-4 w-4 text-[var(--primary)]" />
-        <h3 className="text-sm font-semibold">Model Overview</h3>
+        <h3 className="text-sm font-semibold">{t("step5.modelOverview")}</h3>
       </div>
       <div className="space-y-2 text-xs">
         <Row label="Model" value={data.repo_id as string} />
@@ -231,6 +234,7 @@ function ModelOverviewCard({ data }: { data: Record<string, unknown> | undefined
 }
 
 function EvidenceSummaryCard({ data }: { data: Record<string, unknown> | undefined }) {
+  const { t } = useI18n();
   if (!data) return null;
   const recipe = data.vllm_recipe as Record<string, unknown> | undefined;
   const evals = data.evaluations as Record<string, unknown> | undefined;
@@ -240,7 +244,7 @@ function EvidenceSummaryCard({ data }: { data: Record<string, unknown> | undefin
     <div className="rounded-xl border border-[var(--border)] p-5">
       <div className="mb-4 flex items-center gap-2">
         <BookOpen className="h-4 w-4 text-[var(--primary)]" />
-        <h3 className="text-sm font-semibold">Collected Evidence</h3>
+        <h3 className="text-sm font-semibold">{t("step5.collectedEvidence")}</h3>
         <span className="ml-auto rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-bold">
           {String(data.total_items || 0)} items
         </span>
@@ -309,6 +313,7 @@ function EvidenceSummaryCard({ data }: { data: Record<string, unknown> | undefin
 }
 
 function UseCaseChart({ data }: { data: Record<string, unknown> }) {
+  const { t } = useI18n();
   const useCases = (data.use_case_presets as string[] | undefined) || [];
   if (useCases.length === 0) return null;
 
@@ -362,7 +367,7 @@ function UseCaseChart({ data }: { data: Record<string, unknown> }) {
           <path d="M21 12a9 9 0 01-9 9 9 9 0 01-9-9 9 9 0 019-9 9 9 0 019 9z" />
           <path d="M12 3v9l6 3" />
         </svg>
-        <h3 className="text-sm font-semibold">Use Case Distribution</h3>
+        <h3 className="text-sm font-semibold">{t("step5.useCaseDistribution")}</h3>
         <span className="ml-auto text-[10px] text-[var(--muted-foreground)]">
           Estimated request mix by workload type
         </span>
@@ -438,12 +443,13 @@ function UseCaseChart({ data }: { data: Record<string, unknown> }) {
 }
 
 function DeploymentCard({ data }: { data: Record<string, unknown> | undefined }) {
+  const { t } = useI18n();
   if (!data) return null;
   return (
     <div className="rounded-xl border border-[var(--border)] p-5">
       <div className="mb-3 flex items-center gap-2">
         <Server className="h-4 w-4 text-[var(--primary)]" />
-        <h3 className="text-sm font-semibold">Deployment</h3>
+        <h3 className="text-sm font-semibold">{t("step5.deployment")}</h3>
       </div>
       <div className="space-y-2 text-xs">
         <Row label="GPU" value={`${data.gpu_count}× ${data.gpu_type}`} />
@@ -459,6 +465,7 @@ function DeploymentCard({ data }: { data: Record<string, unknown> | undefined })
 }
 
 function MemoryCard({ data }: { data: Record<string, unknown> | undefined }) {
+  const { t } = useI18n();
   if (!data) return null;
   const fits = data.fits as boolean;
   const util = data.utilization_pct as number;
@@ -467,7 +474,7 @@ function MemoryCard({ data }: { data: Record<string, unknown> | undefined }) {
     <div className={cn("rounded-xl border p-5", fits ? "border-[var(--border)]" : "border-red-500/30")}>
       <div className="mb-3 flex items-center gap-2">
         <MemoryStick className="h-4 w-4 text-[var(--primary)]" />
-        <h3 className="text-sm font-semibold">Memory</h3>
+        <h3 className="text-sm font-semibold">{t("step5.memory")}</h3>
         {fits ? (
           <CheckCircle2 className="ml-auto h-4 w-4 text-green-500" />
         ) : (
@@ -503,6 +510,7 @@ function MemoryCard({ data }: { data: Record<string, unknown> | undefined }) {
 }
 
 function CostCard({ data }: { data: Record<string, unknown> | undefined }) {
+  const { t } = useI18n();
   if (!data) return null;
   const isCloud = data.type === "cloud";
 
@@ -510,7 +518,7 @@ function CostCard({ data }: { data: Record<string, unknown> | undefined }) {
     <div className="rounded-xl border border-[var(--border)] p-5">
       <div className="mb-3 flex items-center gap-2">
         <DollarSign className="h-4 w-4 text-[var(--primary)]" />
-        <h3 className="text-sm font-semibold">Cost</h3>
+        <h3 className="text-sm font-semibold">{t("step5.cost")}</h3>
         <span className="ml-auto rounded bg-[var(--muted)] px-1.5 py-0.5 text-[9px] font-medium">
           {isCloud ? String(data.platform).toUpperCase() : "On-Prem TCO"}
         </span>
@@ -568,6 +576,7 @@ function CostCard({ data }: { data: Record<string, unknown> | undefined }) {
 }
 
 function PerformanceForecastChart({ data }: { data: Record<string, unknown> }) {
+  const { t } = useI18n();
   const chartData = (data.chart_data as { batch_size: number; throughput_tokens_per_sec: number; latency_per_token_ms: number }[]) || [];
   const maxThroughput = Math.max(...chartData.map((d) => d.throughput_tokens_per_sec), 1);
   const explanation = data.explanation as Record<string, string> | undefined;
@@ -576,7 +585,7 @@ function PerformanceForecastChart({ data }: { data: Record<string, unknown> }) {
     <div className="rounded-xl border border-[var(--border)] p-6">
       <div className="mb-4 flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-[var(--primary)]" />
-        <h3 className="text-sm font-semibold">Performance Forecast</h3>
+        <h3 className="text-sm font-semibold">{t("step5.performanceForecast")}</h3>
         <span className="ml-auto text-[10px] text-[var(--muted-foreground)]">
           Theoretical roofline model (memory-bandwidth bound)
         </span>
@@ -679,6 +688,7 @@ function PerformanceForecastChart({ data }: { data: Record<string, unknown> }) {
 }
 
 function DesignSuggestionCard({ data }: { data: Record<string, unknown> }) {
+  const { t } = useI18n();
   const content = data.content as string | undefined;
   const source = data.source as string | undefined;
   const modelUsed = data.model_used as string | undefined;
@@ -692,7 +702,7 @@ function DesignSuggestionCard({ data }: { data: Record<string, unknown> }) {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Lightbulb className="h-4 w-4 text-[var(--primary)]" />
-          <h3 className="text-sm font-semibold">Inference Design Suggestion</h3>
+          <h3 className="text-sm font-semibold">{t("step5.designSuggestion")}</h3>
         </div>
         <span className="rounded bg-[var(--muted)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--muted-foreground)]">
           {source === "llm" ? `AI · ${modelUsed}` : "Deterministic"}

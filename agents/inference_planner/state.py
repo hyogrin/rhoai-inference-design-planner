@@ -20,6 +20,7 @@ class PlannerState(MessagesState):
     session_id: str
     current_phase: str
     current_step: int
+    language: str
 
     # Model intake
     model_repo_id: str

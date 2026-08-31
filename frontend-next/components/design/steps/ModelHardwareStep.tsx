@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import {
   Cpu,
   Server,
@@ -122,6 +123,7 @@ export function ModelHardwareStep({
   infiniband,
   onInfinibandChange,
 }: ModelHardwareStepProps) {
+  const { t } = useI18n();
   const gpuOptions = platform ? (GPU_OPTIONS[platform] || []) : [];
 
   // Auto-detect interconnect based on GPU type and count
@@ -136,9 +138,9 @@ export function ModelHardwareStep({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Model & Hardware Selection</h2>
+        <h2 className="text-lg font-semibold">{t("step1.title")}</h2>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Specify the model you want to deploy and the available hardware pool.
+          {t("step1.description")}
         </p>
       </div>
 
@@ -146,22 +148,22 @@ export function ModelHardwareStep({
       <div className="rounded-xl border border-[var(--border)] p-6">
         <div className="mb-4 flex items-center gap-2">
           <Cpu className="h-5 w-5 text-[var(--primary)]" />
-          <h3 className="font-medium">Model Identity</h3>
+          <h3 className="font-medium">{t("step1.modelIdentity")}</h3>
         </div>
 
         <div>
           <label className="mb-1.5 block text-sm font-medium">
-            Hugging Face Model ID
+            {t("step1.hfModelId")}
           </label>
           <input
             type="text"
             value={modelRepoId}
             onChange={(e) => onModelRepoIdChange(e.target.value)}
-            placeholder="e.g., RedHatAI/Qwen3.5-35B-A3B-FP8-dynamic"
+            placeholder={t("step1.hfModelIdPlaceholder")}
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm placeholder:text-[var(--muted-foreground)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
           />
           <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-            Full model identifier from Hugging Face Hub (e.g., org/model-name)
+            {t("step1.hfModelIdHelp")}
           </p>
         </div>
       </div>
@@ -170,7 +172,7 @@ export function ModelHardwareStep({
       <div className="rounded-xl border border-[var(--border)] p-6">
         <div className="mb-4 flex items-center gap-2">
           <Server className="h-5 w-5 text-[var(--primary)]" />
-          <h3 className="font-medium">Hardware Pool</h3>
+          <h3 className="font-medium">{t("step1.hardwarePool")}</h3>
         </div>
 
         {/* Step 1: Platform Selection */}
@@ -179,7 +181,7 @@ export function ModelHardwareStep({
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--primary)] text-[10px] font-bold text-[var(--primary-foreground)]">
               1
             </span>
-            <span className="text-sm font-medium">Deployment Platform</span>
+            <span className="text-sm font-medium">{t("step1.deploymentPlatform")}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -221,13 +223,13 @@ export function ModelHardwareStep({
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--primary)] text-[10px] font-bold text-[var(--primary-foreground)]">
                 2
               </span>
-              <span className="text-sm font-medium">GPU Configuration</span>
+              <span className="text-sm font-medium">{t("step1.gpuConfig")}</span>
             </div>
 
             {/* GPU Type */}
             <div className="mb-4">
               <label className="mb-2 block text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
-                GPU Type
+                {t("step1.gpuType")}
               </label>
               <div className="space-y-2">
                 {gpuOptions.map((gpu) => (
@@ -271,7 +273,7 @@ export function ModelHardwareStep({
             {selectedGpu && (
               <div className="animate-in fade-in slide-in-from-top-2 duration-200">
                 <label className="mb-2 block text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
-                  Number of GPUs
+                  {t("step1.gpuCount")}
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {GPU_COUNTS.map((count) => (
@@ -290,7 +292,7 @@ export function ModelHardwareStep({
                   ))}
                 </div>
                 <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-                  Total GPU memory: {gpuCount}×{" "}
+                  {t("step1.totalGpuMemory")}: {gpuCount}×{" "}
                   {gpuOptions.find((g) => g.id === selectedGpu)?.memory ?? "—"}
                 </p>
 
@@ -298,7 +300,7 @@ export function ModelHardwareStep({
                 {gpuCount >= 2 && (
                   <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 p-4">
                     <label className="mb-3 block text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
-                      Interconnect
+                      {t("step1.interconnect")}
                     </label>
                     <div className="flex flex-wrap gap-3">
                       {/* NVLink Toggle */}
@@ -357,7 +359,7 @@ export function ModelHardwareStep({
         {platform && selectedGpu && (
           <div className="mt-6 rounded-lg border border-dashed border-[var(--primary)]/30 bg-[var(--accent)] p-4">
             <h4 className="mb-1 text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wide">
-              Configuration Summary
+              {t("step1.configSummary")}
             </h4>
             <p className="text-sm font-medium">
               {gpuCount}× {gpuOptions.find((g) => g.id === selectedGpu)?.label} on{" "}

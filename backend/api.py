@@ -603,6 +603,7 @@ async def _stream_agui(
             "model_repo_id": model_repo_id,
             "model_revision": model_revision,
             "hardware_inventory": hardware_inventory,
+            "language": forwarded_props.get("language", "en"),
             "current_phase": "intake",
             "current_step": 1,
             "phase_history": [],

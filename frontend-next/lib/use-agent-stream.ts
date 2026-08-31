@@ -92,6 +92,7 @@ export function useAgentStream() {
         nvlink?: boolean;
         infiniband?: boolean;
       },
+      language?: string,
     ) => {
       abortRef.current?.abort();
       const controller = new AbortController();
@@ -132,6 +133,7 @@ export function useAgentStream() {
                 nvlink: hardwareConfig.nvlink,
                 infiniband: hardwareConfig.infiniband,
               }),
+              ...(language && { language }),
             },
           }),
         });

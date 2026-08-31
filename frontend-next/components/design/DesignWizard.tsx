@@ -4,6 +4,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react";
 import { useAgentStream } from "@/lib/use-agent-stream";
+import { useI18n } from "@/lib/i18n";
 import { ModelHardwareStep } from "./steps/ModelHardwareStep";
 import { EvidenceDiscoveryStep } from "./steps/EvidenceDiscoveryStep";
 import { ReadinessGateStep } from "./steps/ReadinessGateStep";
@@ -19,6 +20,7 @@ const STEPS = [
 ] as const;
 
 export function DesignWizard() {
+  const { language, t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
   const [modelRepoId, setModelRepoId] = useState("");
   const [platform, setPlatform] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function DesignWizard() {
       gpuCount,
       nvlink,
       infiniband,
-    });
+    }, language);
   };
 
   const handleSubmitWorkload = (workloadData: Record<string, unknown> | import("./steps/WorkloadProfileStep").WorkloadConfig) => {
@@ -168,11 +170,11 @@ export function DesignWizard() {
           )}
         >
           <ChevronLeft className="h-4 w-4" />
-          Back
+          {t("nav.back")}
         </button>
 
         <span className="text-sm text-[var(--muted-foreground)]">
-          Step {currentStep} of {STEPS.length}
+          {t("nav.stepOf", { current: currentStep, total: STEPS.length })}
         </span>
 
         {currentStep >= 4 ? (
@@ -197,16 +199,16 @@ export function DesignWizard() {
             {isDiscovering ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Analyzing...
+                {t("nav.analyzing")}
               </>
             ) : currentStep === 1 ? (
               <>
-                Start Analysis
+                {t("nav.startAnalysis")}
                 <ChevronRight className="h-4 w-4" />
               </>
             ) : (
               <>
-                Next
+                {t("nav.next")}
                 <ChevronRight className="h-4 w-4" />
               </>
             )}

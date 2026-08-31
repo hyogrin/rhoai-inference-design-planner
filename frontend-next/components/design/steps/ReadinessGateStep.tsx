@@ -11,6 +11,7 @@ import {
   Calculator,
   Sparkles,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import type { AgentState } from "@/lib/use-agent-stream";
 
 function StatusIcon({ status }: { status: "pass" | "fail" | "warn" }) {
@@ -211,11 +212,12 @@ function ModelAnalysisEditor({
   analysis: ModelAnalysis;
   onChange: (updated: ModelAnalysis) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-xl border border-[var(--primary)]/20 bg-[var(--primary)]/5 p-5">
       <div className="mb-4 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-[var(--primary)]" />
-        <h3 className="text-sm font-semibold">Model Analysis (AI-interpreted)</h3>
+        <h3 className="text-sm font-semibold">{t("step3.modelAnalysis")}</h3>
         <span className="ml-auto rounded bg-[var(--muted)] px-2 py-0.5 text-[10px] text-[var(--muted-foreground)]">
           editable
         </span>
@@ -293,13 +295,14 @@ function MemoryBreakdown({
   gpuId: string;
   modelRepoId?: string;
 }) {
+  const { t } = useI18n();
   const perGpuGb = GPU_MEMORY_GB[gpuId] || 0;
 
   return (
     <div className="rounded-xl border border-[var(--border)] p-6">
       <div className="mb-4 flex items-center gap-2">
         <Calculator className="h-5 w-5 text-[var(--primary)]" />
-        <h3 className="font-medium">Memory Estimation Breakdown</h3>
+        <h3 className="font-medium">{t("step3.memoryEstimation")}</h3>
       </div>
 
       <div className="mb-4 rounded-lg bg-[var(--muted)]/50 p-4 font-mono text-xs">
@@ -435,6 +438,7 @@ function MemoryBreakdown({
 }
 
 export function ReadinessGateStep({ agentState, selectedGpu, gpuCount, modelRepoId }: ReadinessGateStepProps) {
+  const { t } = useI18n();
   const { status, nodeStatuses, interrupt } = agentState;
   const validationDone = nodeStatuses["validate_discovery"] === "done";
   const modelAnalysisDone = nodeStatuses["interpret_model_config"] === "done";
@@ -483,9 +487,9 @@ export function ReadinessGateStep({ agentState, selectedGpu, gpuCount, modelRepo
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Readiness Gate</h2>
+        <h2 className="text-lg font-semibold">{t("step3.title")}</h2>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Validating deployment feasibility before generating recommendations.
+          {t("step3.description")}
         </p>
       </div>
 
@@ -497,8 +501,8 @@ export function ReadinessGateStep({ agentState, selectedGpu, gpuCount, modelRepo
               <Loader2 className="h-6 w-6 animate-spin text-[var(--primary)]" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-[var(--muted-foreground)]">Validating...</h3>
-              <p className="text-sm text-[var(--muted-foreground)]">Running readiness checks on collected evidence.</p>
+              <h3 className="text-lg font-semibold text-[var(--muted-foreground)]">{t("step3.validating")}</h3>
+              <p className="text-sm text-[var(--muted-foreground)]">{t("step3.validatingDesc")}</p>
             </div>
           </div>
         ) : (
@@ -520,13 +524,13 @@ export function ReadinessGateStep({ agentState, selectedGpu, gpuCount, modelRepo
                   : overallStatus === "limited" ? "text-[var(--warning)]"
                     : overallStatus === "blocked" ? "text-[var(--destructive)]" : "text-[var(--muted-foreground)]"
               }`}>
-                {overallStatus === "ready" ? "Ready" : overallStatus === "limited" ? "Limited" : overallStatus === "blocked" ? "Blocked" : "Awaiting validation..."}
+                {overallStatus === "ready" ? t("step3.ready") : overallStatus === "limited" ? t("step3.limited") : overallStatus === "blocked" ? t("step3.blocked") : t("step3.awaitingValidation")}
               </h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                {overallStatus === "ready" ? "All checks passed. Ready for workload configuration."
-                  : overallStatus === "limited" ? "Deployment possible with constraints."
-                    : overallStatus === "blocked" ? "Critical issues need resolution."
-                      : "Complete evidence discovery first."}
+                {overallStatus === "ready" ? t("step3.readyDesc")
+                  : overallStatus === "limited" ? t("step3.limitedDesc")
+                    : overallStatus === "blocked" ? t("step3.blockedDesc")
+                      : t("step3.awaitingValidationDesc")}
               </p>
             </div>
           </div>
@@ -536,7 +540,7 @@ export function ReadinessGateStep({ agentState, selectedGpu, gpuCount, modelRepo
       {/* Validation Checks */}
       {checks.length > 0 && (
         <div className="rounded-xl border border-[var(--border)] p-6">
-          <h3 className="mb-4 font-medium">Validation Checks</h3>
+          <h3 className="mb-4 font-medium">{t("step3.validationChecks")}</h3>
           <div className="space-y-3">
             {checks.map((check) => (
               <div key={check.label} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3">
@@ -570,7 +574,7 @@ export function ReadinessGateStep({ agentState, selectedGpu, gpuCount, modelRepo
         <div className="rounded-xl border border-dashed border-[var(--destructive)]/30 bg-[var(--destructive)]/5 p-6">
           <div className="mb-3 flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-[var(--destructive)]" />
-            <h3 className="font-medium text-[var(--destructive)]">Recommendations</h3>
+            <h3 className="font-medium text-[var(--destructive)]">{t("step3.recommendations")}</h3>
           </div>
           <ul className="space-y-2 text-sm text-[var(--muted-foreground)]">
             <li className="flex items-start gap-2">
