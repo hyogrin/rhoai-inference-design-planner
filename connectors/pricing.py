@@ -22,13 +22,17 @@ _DATA_DIR = Path(__file__).parent / "data"
 
 # Canonical GPU name mapping: full sizing key → scaling factor key
 _GPU_SCALING_KEY: dict[str, str] = {
+    "B300-288GB": "B300",
+    "GB300-288GB": "GB300",
     "B200-192GB": "B200",
+    "GB200-192GB": "GB200",
     "H200-141GB": "H200",
     "H100-80GB": "H100",
     "MI300X-192GB": "MI300X",
     "A100-80GB": "A100-80GB",
     "A100-40GB": "A100-40GB",
     "L40S-48GB": "L40S",
+    "RTX-PRO-6000-96GB": "RTX-PRO-6000",
     "A10G-24GB": "A10G",
     "L4-24GB": "L4",
     "T4-16GB": "T4",

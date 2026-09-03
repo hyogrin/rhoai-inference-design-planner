@@ -593,8 +593,7 @@ async def _stream_agui(
 
         hardware_inventory: dict = {"environment_type": environment_type}
         if forwarded_props.get("gpu_type"):
-            gpu_raw = forwarded_props["gpu_type"]
-            hardware_inventory["gpu_type"] = gpu_raw.split("-")[0] if "-" in gpu_raw else gpu_raw
+            hardware_inventory["gpu_type"] = forwarded_props["gpu_type"]
         if forwarded_props.get("gpu_count"):
             hardware_inventory["gpu_count"] = forwarded_props["gpu_count"]
 

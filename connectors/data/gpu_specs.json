@@ -1,4 +1,14 @@
 {
+  "B300": {
+    "gpu_name": "NVIDIA B300",
+    "memory_gb": 288,
+    "bf16_tflops": 2250,
+    "fp8_tflops": 4500,
+    "memory_bandwidth_tbps": 8.0,
+    "tdp_watts": 1200,
+    "list_price_usd": 45000,
+    "typical_street_price_usd": 40000
+  },
   "B200": {
     "gpu_name": "NVIDIA B200",
     "memory_gb": 192,
@@ -108,5 +118,37 @@
     "tdp_watts": 70,
     "list_price_usd": 2000,
     "typical_street_price_usd": 1500
+  },
+  "GB200": {
+    "gpu_name": "NVIDIA GB200 NVL72",
+    "memory_gb": 192,
+    "bf16_tflops": 2250,
+    "fp8_tflops": 4500,
+    "memory_bandwidth_tbps": 8.0,
+    "tdp_watts": 1200,
+    "list_price_usd": 42000,
+    "typical_street_price_usd": 38000,
+    "notes": "GB200 NVL72 rack-scale system; per-GPU pricing estimated from rack cost"
+  },
+  "GB300": {
+    "gpu_name": "NVIDIA GB300 NVL72",
+    "memory_gb": 288,
+    "bf16_tflops": 2250,
+    "fp8_tflops": 4500,
+    "memory_bandwidth_tbps": 8.0,
+    "tdp_watts": 1400,
+    "list_price_usd": 48000,
+    "typical_street_price_usd": 43000,
+    "notes": "GB300 NVL72 rack-scale system; per-GPU pricing estimated from rack cost"
+  },
+  "RTX-PRO-6000": {
+    "gpu_name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "memory_gb": 96,
+    "bf16_tflops": 500,
+    "fp8_tflops": 1000,
+    "memory_bandwidth_tbps": 1.597,
+    "tdp_watts": 600,
+    "list_price_usd": 10000,
+    "typical_street_price_usd": 8500
   }
 }

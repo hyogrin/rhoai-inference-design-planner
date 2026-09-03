@@ -48,51 +48,70 @@ const GPU_OPTIONS: Record<
   { id: string; label: string; memory: string; tier: string }[]
 > = {
   "on-premise": [
+    { id: "B300-288GB", label: "NVIDIA B300", memory: "288 GB HBM3e", tier: "flagship" },
+    { id: "GB300-288GB", label: "NVIDIA GB300 (NVL72)", memory: "288 GB HBM3e/GPU", tier: "flagship" },
     { id: "B200-192GB", label: "NVIDIA B200", memory: "192 GB HBM3e", tier: "flagship" },
+    { id: "GB200-192GB", label: "NVIDIA GB200 (NVL72)", memory: "192 GB HBM3e/GPU", tier: "flagship" },
     { id: "H200-141GB", label: "NVIDIA H200", memory: "141 GB HBM3e", tier: "flagship" },
     { id: "H100-80GB", label: "NVIDIA H100", memory: "80 GB HBM3", tier: "flagship" },
     { id: "MI300X-192GB", label: "AMD MI300X", memory: "192 GB HBM3", tier: "flagship" },
     { id: "A100-80GB", label: "NVIDIA A100 (80GB)", memory: "80 GB HBM2e", tier: "high" },
     { id: "A100-40GB", label: "NVIDIA A100 (40GB)", memory: "40 GB HBM2e", tier: "high" },
+    { id: "RTX-PRO-6000-96GB", label: "NVIDIA RTX PRO 6000", memory: "96 GB GDDR7", tier: "high" },
     { id: "L40S-48GB", label: "NVIDIA L40S", memory: "48 GB GDDR6X", tier: "mid" },
     { id: "L4-24GB", label: "NVIDIA L4", memory: "24 GB GDDR6", tier: "mid" },
     { id: "T4-16GB", label: "NVIDIA T4", memory: "16 GB GDDR6", tier: "entry" },
   ],
   aws: [
-    { id: "B200-192GB", label: "B200 (p6.48xlarge)", memory: "192 GB HBM3e", tier: "flagship" },
+    { id: "B300-288GB", label: "B300 (p6-b300.48xlarge)", memory: "288 GB HBM3e", tier: "flagship" },
+    { id: "GB300-288GB", label: "GB300 NVL72 (p6e-gb300)", memory: "288 GB HBM3e/GPU", tier: "flagship" },
+    { id: "B200-192GB", label: "B200 (p6-b200.48xlarge)", memory: "192 GB HBM3e", tier: "flagship" },
+    { id: "GB200-192GB", label: "GB200 NVL72 (p6e-gb200)", memory: "192 GB HBM3e/GPU", tier: "flagship" },
     { id: "H200-141GB", label: "H200 (p5e.48xlarge)", memory: "141 GB HBM3e", tier: "flagship" },
     { id: "H100-80GB", label: "H100 (p5.48xlarge)", memory: "80 GB HBM3", tier: "flagship" },
     { id: "A100-80GB", label: "A100 (p4de.24xlarge)", memory: "80 GB HBM2e", tier: "high" },
     { id: "A100-40GB", label: "A100 (p4d.24xlarge)", memory: "40 GB HBM2e", tier: "high" },
+    { id: "RTX-PRO-6000-96GB", label: "RTX PRO 6000 (g7e)", memory: "96 GB GDDR7", tier: "high" },
     { id: "A10G-24GB", label: "A10G (g5.xlarge)", memory: "24 GB GDDR6X", tier: "mid" },
     { id: "L4-24GB", label: "L4 (g6.xlarge)", memory: "24 GB GDDR6", tier: "mid" },
     { id: "T4-16GB", label: "T4 (g4dn.xlarge)", memory: "16 GB GDDR6", tier: "entry" },
   ],
   azure: [
+    { id: "B300-288GB", label: "B300 (ND B300 v6)", memory: "288 GB HBM3e", tier: "flagship" },
+    { id: "GB300-288GB", label: "GB300 NVL72 (ND GB300 v6)", memory: "288 GB HBM3e/GPU", tier: "flagship" },
     { id: "B200-192GB", label: "B200 (ND B200 v6)", memory: "192 GB HBM3e", tier: "flagship" },
+    { id: "GB200-192GB", label: "GB200 NVL72 (ND GB200 v6)", memory: "192 GB HBM3e/GPU", tier: "flagship" },
     { id: "H200-141GB", label: "H200 (ND H200 v5)", memory: "141 GB HBM3e", tier: "flagship" },
     { id: "H100-80GB", label: "H100 (ND H100 v5)", memory: "80 GB HBM3", tier: "flagship" },
     { id: "MI300X-192GB", label: "MI300X (ND MI300X v5)", memory: "192 GB HBM3", tier: "flagship" },
     { id: "A100-80GB", label: "A100 (ND A100 v4)", memory: "80 GB HBM2e", tier: "high" },
+    { id: "RTX-PRO-6000-96GB", label: "RTX PRO 6000 (NC v6)", memory: "96 GB GDDR7", tier: "high" },
     { id: "L4-24GB", label: "L4 (NC ads L4 v1)", memory: "24 GB GDDR6", tier: "mid" },
     { id: "T4-16GB", label: "T4 (NC T4 v3)", memory: "16 GB GDDR6", tier: "entry" },
   ],
   gcp: [
+    { id: "B300-288GB", label: "B300 (A4X Max)", memory: "288 GB HBM3e", tier: "flagship" },
+    { id: "GB300-288GB", label: "GB300 NVL72 (A4X Max)", memory: "288 GB HBM3e/GPU", tier: "flagship" },
     { id: "B200-192GB", label: "B200 (a4-highgpu)", memory: "192 GB HBM3e", tier: "flagship" },
+    { id: "GB200-192GB", label: "GB200 NVL72 (A4X)", memory: "192 GB HBM3e/GPU", tier: "flagship" },
     { id: "H200-141GB", label: "H200 (a3-ultragpu)", memory: "141 GB HBM3e", tier: "flagship" },
     { id: "H100-80GB", label: "H100 (a3-highgpu)", memory: "80 GB HBM3", tier: "flagship" },
     { id: "A100-80GB", label: "A100 (a2-ultragpu)", memory: "80 GB HBM2e", tier: "high" },
+    { id: "RTX-PRO-6000-96GB", label: "RTX PRO 6000 (g4)", memory: "96 GB GDDR7", tier: "high" },
     { id: "L4-24GB", label: "L4 (g2-standard)", memory: "24 GB GDDR6", tier: "mid" },
     { id: "T4-16GB", label: "T4 (n1-standard + T4)", memory: "16 GB GDDR6", tier: "entry" },
   ],
 };
 
-const GPU_COUNTS = [1, 2, 4, 8, 16, 32, 64] as const;
+const GPU_COUNTS = [1, 2, 4, 8, 16, 32, 64, 72] as const;
+
+// NVL72 rack-scale GPUs (pricing is estimated/contact-sales)
+const NVL72_GPUS = new Set(["GB200-192GB", "GB300-288GB"]);
 
 // GPUs that support NVLink natively
-const NVLINK_GPUS = new Set(["B200-192GB", "H200-141GB", "H100-80GB", "A100-80GB", "A100-40GB", "MI300X-192GB"]);
+const NVLINK_GPUS = new Set(["B300-288GB", "GB300-288GB", "B200-192GB", "GB200-192GB", "H200-141GB", "H100-80GB", "A100-80GB", "A100-40GB", "MI300X-192GB"]);
 // GPUs typically deployed with InfiniBand in multi-node setups
-const IB_GPUS = new Set(["B200-192GB", "H200-141GB", "H100-80GB", "A100-80GB", "MI300X-192GB"]);
+const IB_GPUS = new Set(["B300-288GB", "GB300-288GB", "B200-192GB", "GB200-192GB", "H200-141GB", "H100-80GB", "A100-80GB", "MI300X-192GB", "RTX-PRO-6000-96GB"]);
 
 interface ModelHardwareStepProps {
   modelRepoId: string;
@@ -267,6 +286,14 @@ export function ModelHardwareStep({
                   </button>
                 ))}
               </div>
+              {selectedGpu && NVL72_GPUS.has(selectedGpu) && (
+                <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                  <span className="mt-0.5 shrink-0 text-amber-500">⚠</span>
+                  <p className="text-[10px] leading-relaxed text-amber-700">
+                    {t("step1.nvl72Notice")}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* GPU Count */}

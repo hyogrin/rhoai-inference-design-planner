@@ -32,14 +32,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(LANG_KEY);
-      if (stored && SUPPORTED.includes(stored as Language)) {
-        setLanguageState(stored as Language);
-      }
-    } catch {
-      // SSR or localStorage unavailable
-    }
+    // Always start with English on fresh page load;
+    // language is selected per-session, not persisted across reloads.
   }, []);
 
   useEffect(() => {

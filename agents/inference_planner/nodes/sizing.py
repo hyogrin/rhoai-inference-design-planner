@@ -15,12 +15,16 @@ from agents.inference_planner.state import PlannerState
 logger = logging.getLogger(__name__)
 
 GPU_SPECS: dict[str, dict[str, Any]] = {
+    "B300-288GB": {"memory_gb": 288, "bandwidth_tbps": 8.0, "flops_tflops": 2250, "arch": "blackwell"},
+    "GB300-288GB": {"memory_gb": 288, "bandwidth_tbps": 8.0, "flops_tflops": 2250, "arch": "blackwell"},
     "B200-192GB": {"memory_gb": 192, "bandwidth_tbps": 8.0, "flops_tflops": 2250, "arch": "blackwell"},
+    "GB200-192GB": {"memory_gb": 192, "bandwidth_tbps": 8.0, "flops_tflops": 2250, "arch": "blackwell"},
     "H200-141GB": {"memory_gb": 141, "bandwidth_tbps": 4.8, "flops_tflops": 989, "arch": "hopper"},
     "H100-80GB": {"memory_gb": 80, "bandwidth_tbps": 3.35, "flops_tflops": 989, "arch": "hopper"},
     "MI300X-192GB": {"memory_gb": 192, "bandwidth_tbps": 5.3, "flops_tflops": 1307, "arch": "cdna3"},
     "A100-80GB": {"memory_gb": 80, "bandwidth_tbps": 2.0, "flops_tflops": 312, "arch": "ampere"},
     "A100-40GB": {"memory_gb": 40, "bandwidth_tbps": 1.55, "flops_tflops": 312, "arch": "ampere"},
+    "RTX-PRO-6000-96GB": {"memory_gb": 96, "bandwidth_tbps": 1.597, "flops_tflops": 500, "arch": "blackwell"},
     "L40S-48GB": {"memory_gb": 48, "bandwidth_tbps": 0.864, "flops_tflops": 362, "arch": "ada"},
     "A10G-24GB": {"memory_gb": 24, "bandwidth_tbps": 0.6, "flops_tflops": 125, "arch": "ampere"},
     "L4-24GB": {"memory_gb": 24, "bandwidth_tbps": 0.3, "flops_tflops": 121, "arch": "ada"},
@@ -33,12 +37,16 @@ QUANT_GPU_REQUIREMENTS: dict[str, set[str]] = {
 }
 
 GPU_HOURLY_COST: dict[str, float] = {
-    "B200-192GB": 12.0,
+    "B300-288GB": 17.80,
+    "GB300-288GB": 17.80,
+    "B200-192GB": 14.24,
+    "GB200-192GB": 14.24,
     "H200-141GB": 8.5,
     "H100-80GB": 5.5,
     "MI300X-192GB": 5.0,
     "A100-80GB": 3.5,
     "A100-40GB": 2.5,
+    "RTX-PRO-6000-96GB": 3.0,
     "L40S-48GB": 2.0,
     "A10G-24GB": 1.2,
     "L4-24GB": 0.8,
@@ -155,6 +163,12 @@ async def calculate_memory_capacity(state: PlannerState) -> dict:
         repo_id = state.get("model_repo_id", "")
         params_b = await _estimate_params_with_llm(repo_id)
     gpu_spec = GPU_SPECS.get(gpu_type)
+    if not gpu_spec:
+        for key, spec in GPU_SPECS.items():
+            if key.startswith(gpu_type + "-") or key.startswith(gpu_type):
+                gpu_spec = spec
+                gpu_type = key
+                break
     if not gpu_spec:
         logger.warning("Unknown GPU type '%s' — cannot estimate memory", gpu_type)
         return {
@@ -481,10 +495,19 @@ async def calculate_performance_forecast(state: PlannerState) -> dict:
     else:
         active_params_b = params_b
 
+    is_moe = bool(arch.get("num_experts_total"))
+
     # --- Decode Roofline ---
     # Memory-bandwidth ceiling: max tokens/s for batch=1
-    # Reading all weights once per token → 1 token per weight-read
+    # Dense model: reading all weights once per token
     mem_ceiling_tps = total_bandwidth_bytes / model_size_bytes if model_size_bytes > 0 else 1
+
+    # MoE: per-token weight read is approximately active params, not total
+    moe_active_decode_tps = None
+    if is_moe and active_params_b != params_b:
+        active_model_bytes = active_params_b * 1e9 * bytes_per_param
+        if active_model_bytes > 0:
+            moe_active_decode_tps = total_bandwidth_bytes / active_model_bytes
 
     # Compute ceiling: max tokens/s regardless of batch
     # Each token requires ~2*active_params FLOPs (matmul forward pass)
@@ -530,17 +553,27 @@ async def calculate_performance_forecast(state: PlannerState) -> dict:
         "ridge_batch_size": round(ridge_batch, 1),
         "estimated_tpot_ms": round(tpot_single_ms, 2),
         "estimated_ttft_ms": round(ttft_ms, 1),
+        "ttft_assumed_input_tokens": ttft_input_tokens,
         "max_batch_at_target_tpot": max_batch_at_target,
+        "is_moe": is_moe,
         "chart_data": chart_data,
         "explanation": {
             "model": f"{params_b:.1f}B{'(' + f'{active_params_b:.1f}B active)' if active_params_b != params_b else ''} params @ {_precision_label(precision_bits)}",
             "hardware": f"{gpu_count}× {gpu_type}",
             "bandwidth": f"{total_bandwidth_bytes / 1e12:.1f} TB/s total",
             "compute": f"{total_flops / 1e12:.0f} TFLOPS total",
-            "memory_bound": f"Batch 1→{math.floor(ridge_batch)}: throughput scales linearly",
+            "memory_bound": f"Batch 1->{math.floor(ridge_batch)}: throughput scales linearly",
             "compute_bound": f"Batch >{math.floor(ridge_batch)}: saturates at {compute_ceiling_tps:.0f} tok/s",
         },
     }
+
+    if is_moe:
+        forecast["moe_warning"] = (
+            "Dense-model approximation; actual MoE throughput depends on "
+            "active parameters, routing distribution, and expert batching"
+        )
+        if moe_active_decode_tps is not None:
+            forecast["moe_active_decode_tps"] = round(moe_active_decode_tps, 1)
 
     existing_rec = state.get("recommendation") or {}
     existing_rec["performance_forecast"] = forecast
@@ -609,14 +642,26 @@ def _calculate_cloud_cost(pricing, platform: str, gpu_type: str, gpu_count: int)
     """Calculate cloud cost from vendor pricing data."""
     # Map our GPU IDs to pricing connector GPU names
     gpu_name_map = {
-        "B200-192GB": "B200", "H200-141GB": "H200", "H100-80GB": "H100",
+        "B300-288GB": "B300", "GB300-288GB": "GB300",
+        "B200-192GB": "B200", "GB200-192GB": "GB200",
+        "H200-141GB": "H200", "H100-80GB": "H100",
         "MI300X-192GB": "MI300X", "A100-80GB": "A100-80GB", "A100-40GB": "A100",
+        "RTX-PRO-6000-96GB": "RTX-PRO-6000",
         "L40S-48GB": "L40S", "A10G-24GB": "A10G", "L4-24GB": "L4", "T4-16GB": "T4",
     }
     search_gpu = gpu_name_map.get(gpu_type, gpu_type.split("-")[0])
 
+    # GB200/GB300 NVL72 systems use B200/B300 GPUs internally;
+    # search for both names so we find all matching cloud instances
+    search_gpus = [search_gpu]
+    _gb_fallback = {"GB200": "B200", "GB300": "B300"}
+    if search_gpu in _gb_fallback:
+        search_gpus.append(_gb_fallback[search_gpu])
+
     # Get all instances with this GPU type (no minimum filter)
-    instances = pricing.get_cloud_instances_for_gpu(search_gpu, min_gpu_count=1)
+    instances = []
+    for sg in search_gpus:
+        instances.extend(pricing.get_cloud_instances_for_gpu(sg, min_gpu_count=1))
     provider_keys = _PLATFORM_PROVIDER_MAP.get(platform, [])
     platform_instances = [i for i in instances if i["provider"].lower().replace(" ", "") in provider_keys]
 
@@ -705,9 +750,12 @@ def _calculate_cloud_cost(pricing, platform: str, gpu_type: str, gpu_count: int)
 def _resolve_scaling_key(gpu_type: str) -> str:
     """Resolve a GPU type string to its scaling factor dictionary key."""
     _key_map = {
-        "B200-192GB": "B200", "H200-141GB": "H200", "H100-80GB": "H100",
+        "B300-288GB": "B300", "GB300-288GB": "GB300",
+        "B200-192GB": "B200", "GB200-192GB": "GB200",
+        "H200-141GB": "H200", "H100-80GB": "H100",
         "MI300X-192GB": "MI300X", "A100-80GB": "A100-80GB", "A100-40GB": "A100-40GB",
-        "L40S-48GB": "L40S", "A10G-24GB": "A10G", "L4-24GB": "L4", "T4-16GB": "T4",
+        "L40S-48GB": "L40S", "RTX-PRO-6000-96GB": "RTX-PRO-6000",
+        "A10G-24GB": "A10G", "L4-24GB": "L4", "T4-16GB": "T4",
     }
     if gpu_type in _key_map:
         return _key_map[gpu_type]

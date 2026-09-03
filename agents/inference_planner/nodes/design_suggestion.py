@@ -36,6 +36,47 @@ def _precision_label(bits: int) -> str:
     return {4: "INT4", 8: "FP8", 16: "FP16", 32: "FP32"}.get(bits, f"FP{bits}")
 
 
+def _build_architecture_detail(arch: dict) -> str:
+    """Build a human-readable architecture detail string."""
+    parts = []
+
+    num_experts = arch.get("num_experts_total")
+    active_params = arch.get("parameter_count_active")
+    if num_experts:
+        active_b = ""
+        if active_params and isinstance(active_params, (int, float)):
+            ab = active_params / 1e9 if active_params > 1e6 else active_params
+            active_b = f", {ab:.1f}B active per token"
+        parts.append(f"MoE with {num_experts} experts{active_b}")
+
+    sliding_layers = arch.get("sliding_attention_layers")
+    full_layers = arch.get("full_attention_layers")
+    if sliding_layers is not None and full_layers is not None:
+        parts.append(f"{sliding_layers} linear-attention + {full_layers} full-attention layers (hybrid)")
+
+    if not parts:
+        parts.append("Dense transformer")
+
+    return "; ".join(parts)
+
+
+def _extract_rhoai_validation(evidence_items: list[dict]) -> str:
+    """Extract RHOAI validation status from evidence items."""
+    for item in evidence_items:
+        summary = (item.get("summary") or "").lower()
+        if "validated" in summary and ("rhoai" in summary or "rhaiis" in summary or "openshift ai" in summary):
+            raw = item.get("summary") or ""
+            vllm_ver = ""
+            for token in raw.split():
+                if token.startswith("0.") or token.startswith("v0."):
+                    vllm_ver = token.rstrip(",;.)")
+                    break
+            if vllm_ver:
+                return f"Yes (vLLM {vllm_ver} per model card)"
+            return "Yes (per model card)"
+    return "Not found in evidence"
+
+
 def _build_context(state: PlannerState) -> dict[str, str]:
     """Extract all relevant context from state into template variables."""
     arch = state.get("model_architecture") or {}
@@ -45,6 +86,7 @@ def _build_context(state: PlannerState) -> dict[str, str]:
     cost = rec.get("cost_estimate") or {}
     workload = state.get("workload_profile") or {}
     hardware = state.get("hardware_inventory") or {}
+    model_analysis = state.get("model_analysis") or {}
 
     gpu_type = workload.get("gpu_type") or hardware.get("gpu_type") or "Unknown"
     gpu_count = workload.get("gpu_count") or hardware.get("gpu_count") or 1
@@ -71,24 +113,74 @@ def _build_context(state: PlannerState) -> dict[str, str]:
 
     platform = workload.get("platform") or hardware.get("environment_type") or "on-premise"
 
+    # Architecture detail
+    architecture_detail = _build_architecture_detail(arch)
+
+    # Quantization / weight source
+    quantization_method = mem.get("quantization_method") or model_analysis.get("weight_precision") or "not specified"
+    weight_source = mem.get("weight_source", "param_count")
+
+    # KV layout and concurrency
+    arch_used = mem.get("arch_used") or {}
+    kv_layout = model_analysis.get("kv_layout") or "standard"
+    if mem.get("is_hybrid_attention"):
+        kv_layout = "hybrid_sliding"
+    elif mem.get("is_mla"):
+        kv_layout = "MLA (compressed KV)"
+    seq_len = arch_used.get("seq_len", 4096)
+    concurrency_low = mem.get("concurrency_low", "?")
+    concurrency_high = mem.get("concurrency_high", "?")
+    effective_concurrent = arch_used.get("max_concurrent", "?")
+
+    # RHOAI validation from evidence
+    rhoai_validated = _extract_rhoai_validation(evidence_items)
+
+    # MoE forecast warning
+    is_moe = bool(arch.get("num_experts_total"))
+    active_params = arch.get("parameter_count_active")
+    active_params_b = ""
+    if active_params and isinstance(active_params, (int, float)):
+        active_params_b = f"{active_params / 1e9 if active_params > 1e6 else active_params:.1f}"
+
+    moe_warning = ""
+    if is_moe:
+        moe_warning = (
+            f"WARNING: This is a MoE model. The roofline values below use total model weight "
+            f"for bandwidth calculation. Actual throughput depends on active parameters "
+            f"({active_params_b or '?'}B), expert batching, and routing distribution. "
+            f"Do NOT use these numbers as production capacity estimates.\n"
+        )
+
+    # TTFT input length assumption (must match sizing.py)
+    ttft_input_tokens = perf.get("ttft_assumed_input_tokens", 512)
+
     return {
         "model_repo_id": state.get("model_repo_id", "Unknown"),
         "architecture_type": arch_type,
+        "architecture_detail": architecture_detail,
         "parameters_display": mem.get("parameters_billions", "?"),
         "context_length": arch.get("max_position_embeddings") or arch.get("max_sequence_length") or "Unknown",
         "precision_bits": mem.get("precision_bits", 16),
         "precision_label": _precision_label(mem.get("precision_bits", 16)),
+        "quantization_method": quantization_method,
+        "weight_source": weight_source,
         "platform": platform,
         "gpu_type": gpu_type,
         "gpu_count": gpu_count,
         "total_vram_gb": mem.get("total_available_gb", "?"),
         "model_weights_gb": mem.get("model_weights_gb", "?"),
         "kv_cache_gb": mem.get("kv_cache_gb", "?"),
-        "overhead_gb": mem.get("overhead_min_total_gb") or mem.get("overhead_gb", "~5–12"),
+        "kv_layout": kv_layout,
+        "seq_len": seq_len,
+        "concurrency_low": concurrency_low,
+        "concurrency_high": concurrency_high,
+        "effective_concurrent": effective_concurrent,
+        "overhead_gb": mem.get("overhead_min_total_gb") or mem.get("overhead_gb", "~5-12"),
         "total_required_gb": mem.get("total_required_min_gb") or mem.get("total_required_gb", "?"),
         "total_available_gb": mem.get("total_available_gb", "?"),
         "utilization_pct": mem.get("utilization_pct", "?"),
         "fits": "Yes" if mem.get("fits") else "No",
+        "rhoai_validated": rhoai_validated,
         "use_cases": use_case_str,
         "target_users": workload.get("target_end_users", "?"),
         "max_concurrent": workload.get("max_concurrent_requests", "?"),
@@ -99,6 +191,8 @@ def _build_context(state: PlannerState) -> dict[str, str]:
         "estimated_ttft_ms": perf.get("estimated_ttft_ms", "?"),
         "ridge_batch": perf.get("ridge_batch_size", "?"),
         "max_batch_at_target": perf.get("max_batch_at_target_tpot", "?"),
+        "ttft_input_tokens": ttft_input_tokens,
+        "moe_warning": moe_warning,
         "cost_summary": cost.get("summary", "No cost data"),
         "evidence_summary": evidence_summary,
     }
@@ -120,8 +214,10 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
 
     language = state.get("language", "en")
     language_name = LANGUAGE_NAMES.get(language)
+    lang_instruction = ""
     if language_name:
-        user_prompt += LANGUAGE_INSTRUCTION.format(language_name=language_name)
+        lang_instruction = LANGUAGE_INSTRUCTION.format(language_name=language_name)
+        user_prompt += lang_instruction
 
     session_id = state.get("session_id", "")
 
@@ -169,7 +265,7 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                 json={
                     "model": model_name,
                     "messages": [
-                        {"role": "system", "content": DESIGN_SUGGESTION_SYSTEM},
+                        {"role": "system", "content": DESIGN_SUGGESTION_SYSTEM + lang_instruction},
                         {"role": "user", "content": user_prompt},
                     ],
                     "max_tokens": 1500,
@@ -297,7 +393,7 @@ def _build_fallback_suggestion(ctx: dict[str, str]) -> dict[str, Any]:
     low_util_note = ""
     if fits == "Yes" and utilization_pct < 50:
         gpu_type = ctx.get("gpu_type", "")
-        mig_gpus = {"H100-80GB", "H200-141GB", "B200-192GB", "A100-80GB", "A100-40GB"}
+        mig_gpus = {"H100-80GB", "H200-141GB", "B200-192GB", "B300-288GB", "GB200-192GB", "GB300-288GB", "A100-80GB", "A100-40GB"}
         if gpu_type in mig_gpus:
             mig_hint = (
                 f"- GPU utilization is only {utilization_pct:.0f}% — consider using "

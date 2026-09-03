@@ -75,7 +75,7 @@
   "step5.autoSaved": "자동 저장됨",
   "step5.saving": "저장 중...",
   "step5.viewAll": "전체 보기",
-  "step5.exportPrompt": "프롬프트 내보내기",
+  "step5.exportPrompt": "프롬프트 재사용",
   "step5.copiedClipboard": "클립보드에 복사됨",
   "step5.attention": "주의",
   "step5.modelOverview": "모델 개요",
@@ -86,6 +86,10 @@
   "step5.performanceForecast": "성능 예측",
   "step5.designSuggestion": "추론 설계 제안",
   "step5.useCaseDistribution": "사용 사례 분포",
+  "step5.disclaimer": "면책 조항: 제시된 수치(메모리 추정, 성능 예측, 비용 추정)는 모델 메타데이터와 하드웨어 사양에 기반한 이론적 근사값입니다. 실제 성능은 워크로드 패턴, 소프트웨어 버전, 런타임 환경에 따라 달라질 수 있습니다. 프로덕션 배포 전 반드시 벤치마크를 통해 검증하세요.",
+  "step5.nvl72CostNotice": "NVL72 랙 스케일 가격은 참고 데이터 및 서드파티 소스 기반 추정치입니다. 실제 비용은 클라우드 프로바이더 또는 하드웨어 벤더에 직접 견적을 요청해야 하며, NVL72 시스템은 일반적으로 맞춤 계약을 통해 판매됩니다.",
+
+  "step1.nvl72Notice": "GB200/GB300 NVL72는 랙 스케일 시스템(랙당 72 GPU)입니다. 클라우드 가격은 일반적으로 공개되지 않으며 맞춤 견적이 필요합니다. 표시되는 비용 추정치는 참고 데이터 기반 근사값입니다.",
 
   "nav.back": "이전",
   "nav.next": "다음",

@@ -26,12 +26,16 @@ function StatusIcon({ status }: { status: "pass" | "fail" | "warn" }) {
 }
 
 const GPU_MEMORY_GB: Record<string, number> = {
+  "B300-288GB": 288,
+  "GB300-288GB": 288,
   "B200-192GB": 192,
+  "GB200-192GB": 192,
   "H200-141GB": 141,
   "H100-80GB": 80,
   "MI300X-192GB": 192,
   "A100-80GB": 80,
   "A100-40GB": 40,
+  "RTX-PRO-6000-96GB": 96,
   "L40S-48GB": 48,
   "A10G-24GB": 24,
   "L4-24GB": 24,

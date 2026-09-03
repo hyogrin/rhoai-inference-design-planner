@@ -75,7 +75,7 @@
   "step5.autoSaved": "Auto-saved",
   "step5.saving": "Saving...",
   "step5.viewAll": "View All",
-  "step5.exportPrompt": "Export Prompt",
+  "step5.exportPrompt": "Reuse Prompt",
   "step5.copiedClipboard": "Copied to clipboard",
   "step5.attention": "Attention",
   "step5.modelOverview": "Model Overview",
@@ -86,6 +86,10 @@
   "step5.performanceForecast": "Performance Forecast",
   "step5.designSuggestion": "Inference Design Suggestion",
   "step5.useCaseDistribution": "Use Case Distribution",
+  "step5.disclaimer": "Disclaimer: The numbers presented (memory estimates, performance forecasts, and cost projections) are theoretical approximations based on model metadata and hardware specifications. Actual performance may vary depending on workload patterns, software versions, and runtime conditions. Always validate with benchmarks before production deployment.",
+  "step5.nvl72CostNotice": "NVL72 rack-scale pricing is estimated from reference data and third-party sources. Actual costs require a direct quote from your cloud provider or hardware vendor, as NVL72 systems are typically sold through custom agreements.",
+
+  "step1.nvl72Notice": "GB200/GB300 NVL72 is a rack-scale system (72 GPUs per rack). Cloud pricing is typically not publicly available and requires contacting your provider for a custom quote. Cost estimates shown are approximations based on reference data.",
 
   "nav.back": "Back",
   "nav.next": "Next",

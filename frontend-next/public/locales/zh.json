@@ -75,7 +75,7 @@
   "step5.autoSaved": "已自动保存",
   "step5.saving": "保存中...",
   "step5.viewAll": "查看全部",
-  "step5.exportPrompt": "导出提示词",
+  "step5.exportPrompt": "复用提示词",
   "step5.copiedClipboard": "已复制到剪贴板",
   "step5.attention": "注意",
   "step5.modelOverview": "模型概览",
@@ -86,6 +86,10 @@
   "step5.performanceForecast": "性能预测",
   "step5.designSuggestion": "推理设计建议",
   "step5.useCaseDistribution": "用例分布",
+  "step5.disclaimer": "免责声明：所展示的数据（内存估算、性能预测和成本估算）是基于模型元数据和硬件规格的理论近似值。实际性能可能因工作负载模式、软件版本和运行时环境而异。在生产部署前，请务必通过基准测试进行验证。",
+  "step5.nvl72CostNotice": "NVL72 机架级定价是基于参考数据和第三方来源的估算值。实际成本需要向云服务提供商或硬件供应商索取直接报价，因为 NVL72 系统通常通过定制协议销售。",
+
+  "step1.nvl72Notice": "GB200/GB300 NVL72 是机架级系统（每机架 72 个 GPU）。云端定价通常不公开，需要联系供应商获取定制报价。显示的成本估算是基于参考数据的近似值。",
 
   "nav.back": "上一步",
   "nav.next": "下一步",

@@ -2,6 +2,42 @@
   "aws": {
     "provider": "AWS",
     "instances": {
+      "p6-b300.48xlarge": {
+        "gpu": "B300",
+        "gpu_count": 8,
+        "gpu_memory_gb": 288,
+        "vcpus": 192,
+        "ram_gb": 4096,
+        "on_demand_hourly": 142.42,
+        "spot_hourly": 71.21,
+        "reserved_1yr_hourly": 92.57,
+        "region": "us-east-1",
+        "notes": "Blackwell Ultra SXM, NVLink 5"
+      },
+      "p6-b200.48xlarge": {
+        "gpu": "B200",
+        "gpu_count": 8,
+        "gpu_memory_gb": 192,
+        "vcpus": 192,
+        "ram_gb": 2048,
+        "on_demand_hourly": 113.93,
+        "spot_hourly": 56.97,
+        "reserved_1yr_hourly": 74.05,
+        "region": "us-east-1",
+        "notes": "Blackwell SXM, NVLink 5"
+      },
+      "p6e-gb200.36xlarge": {
+        "gpu": "GB200",
+        "gpu_count": 4,
+        "gpu_memory_gb": 192,
+        "vcpus": 144,
+        "ram_gb": 960,
+        "on_demand_hourly": 49.42,
+        "spot_hourly": 24.71,
+        "reserved_1yr_hourly": 32.12,
+        "region": "us-east-1",
+        "notes": "NVL72 UltraServer node (4 GPUs per VM, 72 per rack). Capacity Blocks ~$12.36/GPU-hr. Contact AWS sales for pricing."
+      },
       "p5.48xlarge": {
         "gpu": "H100",
         "gpu_count": 8,
@@ -44,6 +80,51 @@
         "on_demand_hourly": 40.96,
         "spot_hourly": 16.38,
         "reserved_1yr_hourly": 26.62,
+        "region": "us-east-1"
+      },
+      "g7e.2xlarge": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 1,
+        "gpu_memory_gb": 96,
+        "vcpus": 8,
+        "ram_gb": 64,
+        "on_demand_hourly": 3.36,
+        "spot_hourly": 1.01,
+        "reserved_1yr_hourly": 2.18,
+        "region": "us-east-1",
+        "notes": "RTX PRO 6000 Blackwell Server Edition, 96 GB GDDR7"
+      },
+      "g7e.12xlarge": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 2,
+        "gpu_memory_gb": 96,
+        "vcpus": 48,
+        "ram_gb": 512,
+        "on_demand_hourly": 8.29,
+        "spot_hourly": 2.49,
+        "reserved_1yr_hourly": 5.39,
+        "region": "us-east-1"
+      },
+      "g7e.24xlarge": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 4,
+        "gpu_memory_gb": 96,
+        "vcpus": 96,
+        "ram_gb": 1024,
+        "on_demand_hourly": 16.57,
+        "spot_hourly": 4.97,
+        "reserved_1yr_hourly": 10.77,
+        "region": "us-east-1"
+      },
+      "g7e.48xlarge": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 8,
+        "gpu_memory_gb": 96,
+        "vcpus": 192,
+        "ram_gb": 2048,
+        "on_demand_hourly": 33.14,
+        "spot_hourly": 9.94,
+        "reserved_1yr_hourly": 21.54,
         "region": "us-east-1"
       },
       "g5.xlarge": {
@@ -125,32 +206,69 @@
       }
     },
     "source_url": "https://aws.amazon.com/ec2/pricing/on-demand/",
-    "last_updated": "2026-07-01"
+    "last_updated": "2026-09-01"
   },
   "gcp": {
     "provider": "Google Cloud",
     "instances": {
+      "a4x-maxgpu-4g-metal": {
+        "gpu": "B300",
+        "gpu_count": 4,
+        "gpu_memory_gb": 288,
+        "vcpus": 144,
+        "ram_gb": 960,
+        "on_demand_hourly": 68.00,
+        "spot_hourly": 20.40,
+        "reserved_1yr_hourly": 44.20,
+        "region": "us-central1",
+        "notes": "GB300 NVL72 node (4× B300 per VM, 18 VMs per rack). Reservation/Spot/Flex-start only. Contact Google Cloud sales."
+      },
+      "a4x-highgpu-4g": {
+        "gpu": "B200",
+        "gpu_count": 4,
+        "gpu_memory_gb": 192,
+        "vcpus": 140,
+        "ram_gb": 884,
+        "on_demand_hourly": 54.00,
+        "spot_hourly": 16.20,
+        "reserved_1yr_hourly": 35.10,
+        "region": "us-central1",
+        "notes": "GB200 NVL72 node (4× B200 per VM, 18 VMs per rack). Reservation/Spot/Flex-start only. Contact Google Cloud sales."
+      },
+      "a4-highgpu-8g": {
+        "gpu": "B200",
+        "gpu_count": 8,
+        "gpu_memory_gb": 192,
+        "vcpus": 224,
+        "ram_gb": 2952,
+        "on_demand_hourly": 128.88,
+        "spot_hourly": 38.66,
+        "reserved_1yr_hourly": 83.77,
+        "region": "us-central1",
+        "notes": "HGX B200 (not NVL72). Reservation/Spot/Flex-start only."
+      },
       "a3-highgpu-8g": {
         "gpu": "H100",
         "gpu_count": 8,
         "gpu_memory_gb": 80,
         "vcpus": 208,
         "ram_gb": 1872,
-        "on_demand_hourly": 101.22,
+        "on_demand_hourly": 87.83,
         "spot_hourly": 30.37,
         "reserved_1yr_hourly": 63.77,
         "region": "us-central1"
       },
-      "a3-megagpu-8g": {
+      "a3-ultragpu-8g": {
         "gpu": "H200",
         "gpu_count": 8,
         "gpu_memory_gb": 141,
         "vcpus": 208,
         "ram_gb": 1872,
-        "on_demand_hourly": 122.45,
+        "on_demand_hourly": 86.76,
         "spot_hourly": 36.74,
-        "reserved_1yr_hourly": 79.59,
-        "region": "us-central1"
+        "reserved_1yr_hourly": 56.39,
+        "region": "us-central1",
+        "notes": "Reservation/Spot/Flex-start only."
       },
       "a2-highgpu-1g": {
         "gpu": "A100-80GB",
@@ -172,6 +290,51 @@
         "on_demand_hourly": 40.97,
         "spot_hourly": 12.29,
         "reserved_1yr_hourly": 25.81,
+        "region": "us-central1"
+      },
+      "g4-standard-48": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 1,
+        "gpu_memory_gb": 96,
+        "vcpus": 48,
+        "ram_gb": 180,
+        "on_demand_hourly": 4.50,
+        "spot_hourly": 1.65,
+        "reserved_1yr_hourly": 2.85,
+        "region": "us-central1",
+        "notes": "RTX PRO 6000 Blackwell Server Edition, 96 GB GDDR7"
+      },
+      "g4-standard-96": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 2,
+        "gpu_memory_gb": 96,
+        "vcpus": 96,
+        "ram_gb": 360,
+        "on_demand_hourly": 9.00,
+        "spot_hourly": 3.30,
+        "reserved_1yr_hourly": 5.70,
+        "region": "us-central1"
+      },
+      "g4-standard-192": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 4,
+        "gpu_memory_gb": 96,
+        "vcpus": 192,
+        "ram_gb": 720,
+        "on_demand_hourly": 18.00,
+        "spot_hourly": 6.60,
+        "reserved_1yr_hourly": 11.40,
+        "region": "us-central1"
+      },
+      "g4-standard-384": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 8,
+        "gpu_memory_gb": 96,
+        "vcpus": 384,
+        "ram_gb": 1440,
+        "on_demand_hourly": 36.00,
+        "spot_hourly": 13.20,
+        "reserved_1yr_hourly": 22.80,
         "region": "us-central1"
       },
       "g2-standard-4": {
@@ -209,11 +372,35 @@
       }
     },
     "source_url": "https://cloud.google.com/compute/gpus-pricing",
-    "last_updated": "2026-07-01"
+    "last_updated": "2026-09-01"
   },
   "azure": {
     "provider": "Microsoft Azure",
     "instances": {
+      "Standard_ND128isr_GB300_v6": {
+        "gpu": "B300",
+        "gpu_count": 4,
+        "gpu_memory_gb": 288,
+        "vcpus": 128,
+        "ram_gb": 864,
+        "on_demand_hourly": 112.48,
+        "spot_hourly": 44.99,
+        "reserved_1yr_hourly": 73.11,
+        "region": "eastus",
+        "notes": "GB300 NVL72 node (4× B300 per VM, 18 VMs per rack). Pricing estimated from third-party models; no public Azure list price yet. Contact Azure sales."
+      },
+      "Standard_ND128isr_NDR_GB200_v6": {
+        "gpu": "B200",
+        "gpu_count": 4,
+        "gpu_memory_gb": 192,
+        "vcpus": 128,
+        "ram_gb": 864,
+        "on_demand_hourly": 108.16,
+        "spot_hourly": 43.26,
+        "reserved_1yr_hourly": 70.30,
+        "region": "eastus",
+        "notes": "GB200 NVL72 node (4× B200 per VM, 18 VMs per rack). Public on-demand price confirmed."
+      },
       "Standard_ND96isr_H100_v5": {
         "gpu": "H100",
         "gpu_count": 8,
@@ -258,6 +445,29 @@
         "reserved_1yr_hourly": 2.32,
         "region": "eastus"
       },
+      "Standard_NC144ds_xl_RTXPRO6000BSE_v6": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 1,
+        "gpu_memory_gb": 96,
+        "vcpus": 144,
+        "ram_gb": 516,
+        "on_demand_hourly": 6.38,
+        "spot_hourly": 1.91,
+        "reserved_1yr_hourly": 4.15,
+        "region": "eastus",
+        "notes": "RTX PRO 6000 Blackwell Server Edition, Intel Granite Rapids CPU"
+      },
+      "Standard_NC288ds_xl_RTXPRO6000BSE_v6": {
+        "gpu": "RTX-PRO-6000",
+        "gpu_count": 2,
+        "gpu_memory_gb": 96,
+        "vcpus": 288,
+        "ram_gb": 1032,
+        "on_demand_hourly": 11.00,
+        "spot_hourly": 3.30,
+        "reserved_1yr_hourly": 7.15,
+        "region": "eastus"
+      },
       "Standard_NC4as_T4_v3": {
         "gpu": "T4",
         "gpu_count": 1,
@@ -282,6 +492,6 @@
       }
     },
     "source_url": "https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/",
-    "last_updated": "2026-07-01"
+    "last_updated": "2026-09-01"
   }
 }

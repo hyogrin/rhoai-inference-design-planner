@@ -67,6 +67,9 @@
   "cost_scaling_factors": {
     "description": "Scaling factors to estimate TCO for different GPU counts and types relative to the 8xH100 reference config",
     "hardware_cost_ratio": {
+      "GB300": 1.60,
+      "B300": 1.50,
+      "GB200": 1.40,
       "B200": 1.30,
       "H200": 1.15,
       "H100": 1.00,
@@ -74,11 +77,15 @@
       "A100-80GB": 0.55,
       "A100-40GB": 0.45,
       "L40S": 0.35,
+      "RTX-PRO-6000": 0.30,
       "L4": 0.15,
       "A10G": 0.15,
       "T4": 0.10
     },
     "power_kw_per_gpu": {
+      "GB300": 2.00,
+      "B300": 1.80,
+      "GB200": 1.70,
       "B200": 1.50,
       "H200": 1.25,
       "H100": 1.25,
@@ -86,6 +93,7 @@
       "A100-80GB": 0.75,
       "A100-40GB": 0.75,
       "L40S": 0.55,
+      "RTX-PRO-6000": 0.90,
       "L4": 0.15,
       "A10G": 0.30,
       "T4": 0.15

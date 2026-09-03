@@ -17,6 +17,7 @@ import {
   Lightbulb,
   Server,
   List,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
@@ -205,6 +206,14 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
 
       {/* Section 4: Design Suggestion (LLM) */}
       {designSuggestion && <DesignSuggestionCard data={designSuggestion} />}
+
+      {/* Disclaimer */}
+      <div className="flex items-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--muted)]/50 px-4 py-3">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)]" />
+        <p className="text-[10px] leading-relaxed text-[var(--muted-foreground)]">
+          {t("step5.disclaimer")}
+        </p>
+      </div>
     </div>
   );
 }
@@ -569,6 +578,14 @@ function CostCard({ data }: { data: Record<string, unknown> | undefined }) {
               {String(data.gpu_count)}× {String(data.gpu_type)}
             </p>
           </div>
+        </div>
+      )}
+      {(String(data.gpu_type || "").startsWith("GB200") || String(data.gpu_type || "").startsWith("GB300")) && (
+        <div className="mt-3 flex items-start gap-1.5 rounded border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5">
+          <span className="mt-0.5 shrink-0 text-amber-500 text-[10px]">⚠</span>
+          <p className="text-[9px] leading-relaxed text-amber-700">
+            {t("step5.nvl72CostNotice")}
+          </p>
         </div>
       )}
     </div>
