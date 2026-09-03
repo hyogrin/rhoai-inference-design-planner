@@ -53,3 +53,7 @@ data/traces/eval_results.json
 
 # Docker
 *.log
+
+
+.lola/*
+.cursor/*

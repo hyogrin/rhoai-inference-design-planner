@@ -124,7 +124,7 @@ function CompareContent() {
 
       {/* Deployment Config */}
       <CompareSection title="Deployment" icon={<Cpu className="h-4 w-4" />}>
-        <CompareRow label="GPU" a={`${str(deployA.gpu_count)}× ${str(deployA.gpu_type)}`} b={`${str(deployB.gpu_count)}× ${str(deployB.gpu_type)}`} />
+        <CompareRow label="GPU" a={formatGpuWithPlatform(deployA)} b={formatGpuWithPlatform(deployB)} />
         <CompareRow label="RHOAI" a={`v${str(deployA.rhoai_version)}`} b={`v${str(deployB.rhoai_version)}`} />
         <CompareRow label="vLLM" a={str(deployA.vllm_version || deployA.min_vllm_version)} b={str(deployB.vllm_version || deployB.min_vllm_version)} />
       </CompareSection>
@@ -217,6 +217,22 @@ function fmtNum(val: unknown): string {
   const n = Number(val);
   if (isNaN(n)) return String(val);
   return n.toLocaleString();
+}
+
+function formatPlatformLabel(platform: unknown): string {
+  if (!platform) return "On-Premise";
+  const p = String(platform).toLowerCase();
+  if (p === "on-premise" || p === "on_prem") return "On-Premise";
+  if (p === "aws") return "AWS";
+  if (p === "azure") return "Azure";
+  if (p === "gcp") return "GCP";
+  return String(platform);
+}
+
+function formatGpuWithPlatform(deploy: Record<string, unknown>): string {
+  const gpu = `${str(deploy.gpu_count)}× ${str(deploy.gpu_type)}`;
+  const platform = formatPlatformLabel(deploy.platform || deploy.environment_type);
+  return `${gpu} (${platform})`;
 }
 
 function ColumnHeader({ label, design }: { label: string; design: DesignDetail }) {

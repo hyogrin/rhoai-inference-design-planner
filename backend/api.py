@@ -480,7 +480,9 @@ def _to_list_item(design) -> DesignSessionListItem:
         sid = section.get("id")
         data = section.get("data", {})
         if sid == "deployment_config" and data:
-            gpu_config = f"{data.get('gpu_count', '?')}× {data.get('gpu_type', '?')}"
+            platform = data.get("platform") or data.get("environment_type") or "on-premise"
+            platform_label = {"on-premise": "On-Premise", "on_prem": "On-Premise", "aws": "AWS", "azure": "Azure", "gcp": "GCP"}.get(str(platform).lower(), str(platform))
+            gpu_config = f"{data.get('gpu_count', '?')}× {data.get('gpu_type', '?')} ({platform_label})"
         if sid == "memory_estimate" and data:
             memory_utilization = f"{data.get('utilization_pct', '?')}%"
             fits = data.get("fits")

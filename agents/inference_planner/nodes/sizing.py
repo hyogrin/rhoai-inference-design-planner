@@ -598,17 +598,25 @@ async def calculate_cost(state: PlannerState) -> dict:
     - On-premise: calculates TCO (hardware + power + 3-year depreciation)
     """
     workload = state.get("workload_profile") or {}
-    gpu_type = workload.get("gpu_type") or ""
-    gpu_count = workload.get("gpu_count", 1)
+    hardware = state.get("hardware_inventory") or {}
+    gpu_type = workload.get("gpu_type") or hardware.get("gpu_type") or ""
+    gpu_count = workload.get("gpu_count") or hardware.get("gpu_count") or 1
 
-    # Determine platform from evidence or workload
-    evidence_items = state.get("evidence_items", [])
-    platform = _detect_platform(evidence_items, workload)
+    platform = _detect_platform(workload, hardware)
 
     from connectors.pricing import PricingConnector
     pricing = PricingConnector()
 
-    if platform == "on-premise":
+    if not platform:
+        logger.warning("Platform unknown — cannot calculate cost for %s", gpu_type)
+        cost_estimate = {
+            "type": "unknown",
+            "gpu_type": gpu_type,
+            "gpu_count": gpu_count,
+            "error": "Platform not specified — cost calculation unavailable",
+            "summary": "Platform not specified — cost calculation unavailable",
+        }
+    elif platform == "on-premise":
         cost_estimate = _calculate_onprem_tco(pricing, gpu_type, gpu_count)
     else:
         cost_estimate = _calculate_cloud_cost(pricing, platform, gpu_type, gpu_count)
@@ -624,18 +632,25 @@ async def calculate_cost(state: PlannerState) -> dict:
     }
 
 
-def _detect_platform(evidence_items: list[dict], workload: dict) -> str:
-    """Detect platform from workload config (set by frontend)."""
-    # Frontend passes platform directly
-    platform = workload.get("platform")
-    if platform and platform != "null":
-        return platform
+def _detect_platform(workload: dict, hardware: dict) -> str | None:
+    """Detect platform from workload or hardware config.
 
-    # Infer from GPU type naming conventions
-    gpu = workload.get("gpu_type", "")
-    if "A10G" in gpu:
-        return "aws"
-    return "on-premise"
+    Returns None if platform cannot be determined — callers must
+    handle the missing-platform case explicitly instead of guessing.
+    """
+    for src in (workload, hardware):
+        p = src.get("platform")
+        if p and p != "null":
+            return p
+
+    env = hardware.get("environment_type")
+    if env and env != "null":
+        if env == "on_prem":
+            return "on-premise"
+        if env in ("aws", "azure", "gcp"):
+            return env
+
+    return None
 
 
 def _calculate_cloud_cost(pricing, platform: str, gpu_type: str, gpu_count: int) -> dict:

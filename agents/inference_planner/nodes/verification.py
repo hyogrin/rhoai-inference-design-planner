@@ -19,11 +19,18 @@ async def verify_recommendation(state: PlannerState) -> dict:
 
     warnings: list[str] = []
 
-    # Check memory fit
-    if mem.get("fits") is False:
+    # Check hardware compatibility block
+    if mem.get("hw_blocked"):
+        reason = mem.get("hw_blocked_reason", "Hardware incompatibility detected")
+        warnings.append(reason)
+
+    # Check memory fit (only meaningful if not hw_blocked)
+    elif mem.get("fits") is False:
+        total_req = mem.get("total_required_min_gb") or mem.get("total_required_gb", "?")
+        total_avail = mem.get("total_available_gb", "?")
         warnings.append(
-            f"Model requires {mem.get('total_required_gb', '?')} GB but only "
-            f"{mem.get('total_available_gb', '?')} GB available"
+            f"Model requires {total_req} GB but only "
+            f"{total_avail} GB available"
         )
 
     # Check vLLM version compatibility

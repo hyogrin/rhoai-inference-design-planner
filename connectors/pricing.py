@@ -397,11 +397,14 @@ class PricingConnector:
         self, gpu_type: str, min_gpu_count: int = 1
     ) -> list[dict[str, Any]]:
         """Get all cloud instances that offer the specified GPU type."""
+        gpu_upper = gpu_type.upper()
+        base_gpu = gpu_type.split("-")[0].upper()
         results: list[dict[str, Any]] = []
         for _provider_key, provider_data in self._cloud_data.items():
             for instance_name, instance in provider_data["instances"].items():
+                inst_gpu = instance["gpu"].upper()
                 if (
-                    gpu_type.upper() in instance["gpu"].upper()
+                    (gpu_upper in inst_gpu or base_gpu in inst_gpu or inst_gpu in gpu_upper)
                     and instance["gpu_count"] >= min_gpu_count
                 ):
                     results.append({
@@ -416,10 +419,13 @@ class PricingConnector:
         self, instances: dict[str, Any], gpu_type: str, gpu_count: int
     ) -> dict[str, Any]:
         """Find instances matching the GPU type with sufficient count."""
+        gpu_upper = gpu_type.upper()
+        base_gpu = gpu_type.split("-")[0].upper()
         matches: dict[str, Any] = {}
         for name, data in instances.items():
+            data_gpu = data["gpu"].upper()
             if (
-                gpu_type.upper() in data["gpu"].upper()
+                (gpu_upper in data_gpu or base_gpu in data_gpu or data_gpu in gpu_upper)
                 and data["gpu_count"] >= gpu_count
             ):
                 matches[name] = data

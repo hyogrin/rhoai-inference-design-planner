@@ -174,9 +174,15 @@ async def synthesize_recommendation(state: PlannerState) -> dict:
     evidence_summary["total_items"] = len(evidence_items)
 
     # Deployment config (from workload + sizing)
+    hardware = state.get("hardware_inventory") or {}
+    platform = workload.get("platform") or hardware.get("environment_type") or "on-premise"
+    if platform == "on_prem":
+        platform = "on-premise"
+
     deployment_config = {
-        "gpu_type": workload.get("gpu_type"),
-        "gpu_count": workload.get("gpu_count", 1),
+        "platform": platform,
+        "gpu_type": workload.get("gpu_type") or hardware.get("gpu_type"),
+        "gpu_count": workload.get("gpu_count") or hardware.get("gpu_count") or 1,
         "rhoai_version": workload.get("rhoai_version"),
         "vllm_version": workload.get("vllm_version"),
         "use_case_presets": workload.get("use_case_presets", []),
