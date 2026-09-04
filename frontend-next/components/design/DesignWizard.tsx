@@ -28,6 +28,7 @@ export function DesignWizard() {
   const [gpuCount, setGpuCount] = useState(1);
   const [nvlink, setNvlink] = useState(false);
   const [infiniband, setInfiniband] = useState(false);
+  const [selectedInstance, setSelectedInstance] = useState<string | null>(null);
 
   const { state: agentState, startDiscovery, resumeWithWorkload } =
     useAgentStream();
@@ -42,6 +43,7 @@ export function DesignWizard() {
       gpuCount,
       nvlink,
       infiniband,
+      instanceType: selectedInstance || undefined,
     }, language);
   };
 
@@ -132,6 +134,8 @@ export function DesignWizard() {
             onNvlinkChange={setNvlink}
             infiniband={infiniband}
             onInfinibandChange={setInfiniband}
+            selectedInstance={selectedInstance}
+            onInstanceChange={setSelectedInstance}
           />
         )}
         {currentStep === 2 && (

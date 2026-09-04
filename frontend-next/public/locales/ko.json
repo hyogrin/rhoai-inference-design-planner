@@ -17,6 +17,8 @@
   "step1.totalGpuMemory": "총 GPU 메모리",
   "step1.interconnect": "인터커넥트",
   "step1.configSummary": "구성 요약",
+  "step1.instanceType": "클라우드 인스턴스",
+  "step1.gpuCountLocked": "GPU 수 (인스턴스에 의해 고정)",
 
   "step2.title": "근거 수집",
   "step2.description": "권장사항을 위한 배포 근거를 여러 소스에서 수집하고 있습니다.",

@@ -125,6 +125,12 @@ function CompareContent() {
       {/* Deployment Config */}
       <CompareSection title="Deployment" icon={<Cpu className="h-4 w-4" />}>
         <CompareRow label="GPU" a={formatGpuWithPlatform(deployA)} b={formatGpuWithPlatform(deployB)} />
+        {(deployA.instance_type || deployB.instance_type) ? (
+          <CompareRow label="Instance" a={str(deployA.instance_type || "—")} b={str(deployB.instance_type || "—")} />
+        ) : null}
+        {(deployA.region || deployB.region) ? (
+          <CompareRow label="Region" a={str(deployA.region || "—")} b={str(deployB.region || "—")} />
+        ) : null}
         <CompareRow label="RHOAI" a={`v${str(deployA.rhoai_version)}`} b={`v${str(deployB.rhoai_version)}`} />
         <CompareRow label="vLLM" a={str(deployA.vllm_version || deployA.min_vllm_version)} b={str(deployB.vllm_version || deployB.min_vllm_version)} />
       </CompareSection>
@@ -150,6 +156,20 @@ function CompareContent() {
         {costA.type === "cloud" || costB.type === "cloud" ? (
           <>
             <CompareRow label="Type" a={str(costA.type)} b={str(costB.type)} />
+            <CompareRow
+              label="Instance"
+              a={str(costA.instance_type || costA.instance || "—")}
+              b={str(costB.instance_type || costB.instance || "—")}
+            />
+            <CompareRow
+              label="Region"
+              a={str(costA.region || "—")}
+              b={str(costB.region || "—")}
+            />
+            <CompareRow label="Hourly" a={`$${fmtNum(costA.on_demand_hourly_usd)}`} b={`$${fmtNum(costB.on_demand_hourly_usd)}`} highlight="lower" />
+            {(costA.normalized_per_gpu_hourly || costB.normalized_per_gpu_hourly) ? (
+              <CompareRow label="Per-GPU" a={`$${fmtNum(costA.normalized_per_gpu_hourly)}/hr`} b={`$${fmtNum(costB.normalized_per_gpu_hourly)}/hr`} highlight="lower" />
+            ) : null}
             <CompareRow label="Monthly" a={`$${fmtNum(costA.monthly_on_demand_usd || costA.monthly_total_usd)}`} b={`$${fmtNum(costB.monthly_on_demand_usd || costB.monthly_total_usd)}`} highlight="lower" />
           </>
         ) : (

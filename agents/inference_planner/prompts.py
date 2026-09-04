@@ -98,6 +98,9 @@ Based on the following deployment context, provide a concise inference architect
 - Platform: {platform}
 - GPU: {gpu_count}× {gpu_type}
 - Total VRAM: {total_vram_gb} GB
+- Cloud instance: {cloud_instance}
+- Region: {cloud_region}
+- Per-GPU hourly rate: {per_gpu_hourly}
 
 ## Memory Analysis
 - Model weights: {model_weights_gb} GB

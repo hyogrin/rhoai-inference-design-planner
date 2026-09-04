@@ -17,6 +17,8 @@
   "step1.totalGpuMemory": "GPU 总内存",
   "step1.interconnect": "互联",
   "step1.configSummary": "配置摘要",
+  "step1.instanceType": "云实例",
+  "step1.gpuCountLocked": "GPU数量（由实例固定）",
 
   "step2.title": "证据收集",
   "step2.description": "正在从多个来源收集部署证据以提供建议。",

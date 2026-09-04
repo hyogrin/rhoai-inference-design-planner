@@ -17,6 +17,8 @@
   "step1.totalGpuMemory": "合計 GPU メモリ",
   "step1.interconnect": "インターコネクト",
   "step1.configSummary": "構成の概要",
+  "step1.instanceType": "クラウドインスタンス",
+  "step1.gpuCountLocked": "GPU数（インスタンスにより固定）",
 
   "step2.title": "エビデンス収集",
   "step2.description": "レコメンデーションのためのデプロイエビデンスを複数のソースから収集しています。",

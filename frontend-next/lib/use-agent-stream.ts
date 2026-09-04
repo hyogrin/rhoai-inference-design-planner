@@ -91,6 +91,7 @@ export function useAgentStream() {
         gpuCount: number;
         nvlink?: boolean;
         infiniband?: boolean;
+        instanceType?: string;
       },
       language?: string,
     ) => {
@@ -132,6 +133,7 @@ export function useAgentStream() {
                 gpu_count: hardwareConfig.gpuCount,
                 nvlink: hardwareConfig.nvlink,
                 infiniband: hardwareConfig.infiniband,
+                ...(hardwareConfig.instanceType && { instance_type: hardwareConfig.instanceType }),
               }),
               ...(language && { language }),
             },

@@ -393,6 +393,23 @@ class PricingConnector:
         """List all known GPU types."""
         return list(self._gpu_specs.keys())
 
+    def get_instance_by_name(
+        self, provider: str, instance_name: str
+    ) -> dict[str, Any] | None:
+        """Look up a specific cloud instance by provider key and instance SKU."""
+        provider_data = self._cloud_data.get(provider)
+        if not provider_data:
+            return None
+        inst = provider_data.get("instances", {}).get(instance_name)
+        if inst:
+            return {
+                "provider": provider_data["provider"],
+                "instance_name": instance_name,
+                "region": inst.get("region", ""),
+                **inst,
+            }
+        return None
+
     def get_cloud_instances_for_gpu(
         self, gpu_type: str, min_gpu_count: int = 1
     ) -> list[dict[str, Any]]:

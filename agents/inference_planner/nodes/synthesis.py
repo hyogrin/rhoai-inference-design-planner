@@ -183,6 +183,7 @@ async def synthesize_recommendation(state: PlannerState) -> dict:
         "platform": platform,
         "gpu_type": workload.get("gpu_type") or hardware.get("gpu_type"),
         "gpu_count": workload.get("gpu_count") or hardware.get("gpu_count") or 1,
+        "instance_type": hardware.get("instance_type"),
         "rhoai_version": workload.get("rhoai_version"),
         "vllm_version": workload.get("vllm_version"),
         "use_case_presets": workload.get("use_case_presets", []),
@@ -191,6 +192,13 @@ async def synthesize_recommendation(state: PlannerState) -> dict:
         "ttft_target_ms": workload.get("ttft_ms"),
         "tpot_target_ms": workload.get("tpot_ms"),
     }
+
+    # Enrich with cost estimate region/instance if available
+    cost = existing_rec.get("cost_estimate") or {}
+    if cost.get("instance_type"):
+        deployment_config["instance_type"] = cost["instance_type"]
+    if cost.get("region"):
+        deployment_config["region"] = cost["region"]
 
     # Merge into recommendation
     existing_rec["model_summary"] = model_summary

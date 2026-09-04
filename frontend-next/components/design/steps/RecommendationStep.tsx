@@ -462,6 +462,8 @@ function DeploymentCard({ data }: { data: Record<string, unknown> | undefined })
       </div>
       <div className="space-y-2 text-xs">
         <Row label="GPU" value={`${data.gpu_count}× ${data.gpu_type}`} />
+        {data.instance_type ? <Row label="Instance" value={String(data.instance_type)} /> : null}
+        {data.region ? <Row label="Region" value={String(data.region)} /> : null}
         <Row label="RHOAI" value={`v${data.rhoai_version} (vLLM ${data.vllm_version})`} />
         <Row label="Use Case" value={(data.use_case_presets as string[] | undefined)?.join(", ") || "—"} />
         <Row label="Users" value={String(data.target_end_users || "—")} />
@@ -535,10 +537,18 @@ function CostCard({ data }: { data: Record<string, unknown> | undefined }) {
 
       {isCloud ? (
         <div className="space-y-2 text-xs">
-          {data.instance ? <Row label="Instance" value={String(data.instance)} /> : null}
+          {data.instance_type || data.instance ? (
+            <Row label="Instance" value={String(data.instance_type || data.instance)} />
+          ) : null}
+          {data.region ? (
+            <Row label="Region" value={String(data.region)} />
+          ) : null}
           <Row label="On-demand" value={`$${data.on_demand_hourly_usd}/hr`} />
           {Number(data.spot_hourly_usd) > 0 ? <Row label="Spot" value={`$${data.spot_hourly_usd}/hr`} /> : null}
           {Number(data.reserved_1yr_hourly_usd) > 0 ? <Row label="Reserved (1yr)" value={`$${data.reserved_1yr_hourly_usd}/hr`} /> : null}
+          {Number(data.normalized_per_gpu_hourly) > 0 ? (
+            <Row label="Per-GPU" value={`$${data.normalized_per_gpu_hourly}/hr`} />
+          ) : null}
           <div className="border-t border-dashed border-[var(--border)] pt-2">
             <div className="flex items-baseline justify-between">
               <span className="text-[var(--muted-foreground)]">Monthly (on-demand)</span>
@@ -834,7 +844,7 @@ Write in clear, professional English. Be direct and specific. Focus on architect
 ## Hardware Configuration
 - Platform: ${v(dep.platform || dep.environment_type, "on-premise")}
 - GPU: ${v(dep.gpu_count)}× ${v(dep.gpu_type)}
-- Total VRAM: ${v(mem.total_available_gb)} GB
+- Total VRAM: ${v(mem.total_available_gb)} GB${cost.instance_type || cost.instance ? `\n- Cloud instance: ${v(cost.instance_type || cost.instance)}` : ""}${cost.region ? `\n- Region: ${v(cost.region)}` : ""}${cost.normalized_per_gpu_hourly ? `\n- Per-GPU hourly: $${v(cost.normalized_per_gpu_hourly)}` : ""}
 
 ## Memory Analysis
 - Model weights: ${v(mem.model_weights_gb)} GB

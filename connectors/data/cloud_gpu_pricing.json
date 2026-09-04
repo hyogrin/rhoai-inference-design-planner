@@ -12,7 +12,27 @@
         "spot_hourly": 71.21,
         "reserved_1yr_hourly": 92.57,
         "region": "us-east-1",
-        "notes": "Blackwell Ultra SXM, NVLink 5"
+        "notes": "Blackwell Ultra SXM, NVLink 5",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 142.42,
+            "spot_hourly": 71.21,
+            "reserved_1yr_hourly": 92.57,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 142.42,
+            "spot_hourly": 67.65,
+            "reserved_1yr_hourly": 92.57,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 153.81,
+            "spot_hourly": 79.76,
+            "reserved_1yr_hourly": 97.2,
+            "available": true
+          }
+        }
       },
       "p6-b200.48xlarge": {
         "gpu": "B200",
@@ -24,7 +44,27 @@
         "spot_hourly": 56.97,
         "reserved_1yr_hourly": 74.05,
         "region": "us-east-1",
-        "notes": "Blackwell SXM, NVLink 5"
+        "notes": "Blackwell SXM, NVLink 5",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 113.93,
+            "spot_hourly": 56.97,
+            "reserved_1yr_hourly": 74.05,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 113.93,
+            "spot_hourly": 54.12,
+            "reserved_1yr_hourly": 74.05,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 123.04,
+            "spot_hourly": 63.81,
+            "reserved_1yr_hourly": 77.75,
+            "available": true
+          }
+        }
       },
       "p6e-gb200.36xlarge": {
         "gpu": "GB200",
@@ -36,7 +76,27 @@
         "spot_hourly": 24.71,
         "reserved_1yr_hourly": 32.12,
         "region": "us-east-1",
-        "notes": "NVL72 UltraServer node (4 GPUs per VM, 72 per rack). Capacity Blocks ~$12.36/GPU-hr. Contact AWS sales for pricing."
+        "notes": "NVL72 UltraServer node (4 GPUs per VM, 72 per rack). Capacity Blocks ~$12.36/GPU-hr. Contact AWS sales for pricing.",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 49.42,
+            "spot_hourly": 24.71,
+            "reserved_1yr_hourly": 32.12,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 49.42,
+            "spot_hourly": 23.47,
+            "reserved_1yr_hourly": 32.12,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 53.37,
+            "spot_hourly": 27.68,
+            "reserved_1yr_hourly": 33.73,
+            "available": true
+          }
+        }
       },
       "p5.48xlarge": {
         "gpu": "H100",
@@ -47,7 +107,27 @@
         "on_demand_hourly": 98.32,
         "spot_hourly": 58.99,
         "reserved_1yr_hourly": 63.91,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 98.32,
+            "spot_hourly": 58.99,
+            "reserved_1yr_hourly": 63.91,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 98.32,
+            "spot_hourly": 56.04,
+            "reserved_1yr_hourly": 63.91,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 106.19,
+            "spot_hourly": 66.07,
+            "reserved_1yr_hourly": 67.11,
+            "available": true
+          }
+        }
       },
       "p5e.48xlarge": {
         "gpu": "H200",
@@ -55,10 +135,30 @@
         "gpu_memory_gb": 141,
         "vcpus": 192,
         "ram_gb": 2048,
-        "on_demand_hourly": 120.00,
-        "spot_hourly": 72.00,
-        "reserved_1yr_hourly": 78.00,
-        "region": "us-east-1"
+        "on_demand_hourly": 120.0,
+        "spot_hourly": 72.0,
+        "reserved_1yr_hourly": 78.0,
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 120.0,
+            "spot_hourly": 72.0,
+            "reserved_1yr_hourly": 78.0,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 120.0,
+            "spot_hourly": 68.4,
+            "reserved_1yr_hourly": 78.0,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 129.6,
+            "spot_hourly": 80.64,
+            "reserved_1yr_hourly": 81.9,
+            "available": true
+          }
+        }
       },
       "p4d.24xlarge": {
         "gpu": "A100-80GB",
@@ -68,8 +168,28 @@
         "ram_gb": 1152,
         "on_demand_hourly": 32.77,
         "spot_hourly": 13.86,
-        "reserved_1yr_hourly": 20.70,
-        "region": "us-east-1"
+        "reserved_1yr_hourly": 20.7,
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 32.77,
+            "spot_hourly": 13.86,
+            "reserved_1yr_hourly": 20.7,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 32.77,
+            "spot_hourly": 13.17,
+            "reserved_1yr_hourly": 20.7,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 35.39,
+            "spot_hourly": 15.52,
+            "reserved_1yr_hourly": 21.73,
+            "available": true
+          }
+        }
       },
       "p4de.24xlarge": {
         "gpu": "A100-80GB",
@@ -80,7 +200,27 @@
         "on_demand_hourly": 40.96,
         "spot_hourly": 16.38,
         "reserved_1yr_hourly": 26.62,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 40.96,
+            "spot_hourly": 16.38,
+            "reserved_1yr_hourly": 26.62,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 40.96,
+            "spot_hourly": 15.56,
+            "reserved_1yr_hourly": 26.62,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 44.24,
+            "spot_hourly": 18.35,
+            "reserved_1yr_hourly": 27.95,
+            "available": true
+          }
+        }
       },
       "g7e.2xlarge": {
         "gpu": "RTX-PRO-6000",
@@ -92,7 +232,27 @@
         "spot_hourly": 1.01,
         "reserved_1yr_hourly": 2.18,
         "region": "us-east-1",
-        "notes": "RTX PRO 6000 Blackwell Server Edition, 96 GB GDDR7"
+        "notes": "RTX PRO 6000 Blackwell Server Edition, 96 GB GDDR7",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 3.36,
+            "spot_hourly": 1.01,
+            "reserved_1yr_hourly": 2.18,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 3.36,
+            "spot_hourly": 0.96,
+            "reserved_1yr_hourly": 2.18,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 3.63,
+            "spot_hourly": 1.13,
+            "reserved_1yr_hourly": 2.29,
+            "available": true
+          }
+        }
       },
       "g7e.12xlarge": {
         "gpu": "RTX-PRO-6000",
@@ -103,7 +263,27 @@
         "on_demand_hourly": 8.29,
         "spot_hourly": 2.49,
         "reserved_1yr_hourly": 5.39,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 8.29,
+            "spot_hourly": 2.49,
+            "reserved_1yr_hourly": 5.39,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 8.29,
+            "spot_hourly": 2.37,
+            "reserved_1yr_hourly": 5.39,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 8.95,
+            "spot_hourly": 2.79,
+            "reserved_1yr_hourly": 5.66,
+            "available": true
+          }
+        }
       },
       "g7e.24xlarge": {
         "gpu": "RTX-PRO-6000",
@@ -114,7 +294,27 @@
         "on_demand_hourly": 16.57,
         "spot_hourly": 4.97,
         "reserved_1yr_hourly": 10.77,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 16.57,
+            "spot_hourly": 4.97,
+            "reserved_1yr_hourly": 10.77,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 16.57,
+            "spot_hourly": 4.72,
+            "reserved_1yr_hourly": 10.77,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 17.9,
+            "spot_hourly": 5.57,
+            "reserved_1yr_hourly": 11.31,
+            "available": true
+          }
+        }
       },
       "g7e.48xlarge": {
         "gpu": "RTX-PRO-6000",
@@ -125,7 +325,27 @@
         "on_demand_hourly": 33.14,
         "spot_hourly": 9.94,
         "reserved_1yr_hourly": 21.54,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 33.14,
+            "spot_hourly": 9.94,
+            "reserved_1yr_hourly": 21.54,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 33.14,
+            "spot_hourly": 9.44,
+            "reserved_1yr_hourly": 21.54,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 35.79,
+            "spot_hourly": 11.13,
+            "reserved_1yr_hourly": 22.62,
+            "available": true
+          }
+        }
       },
       "g5.xlarge": {
         "gpu": "A10G",
@@ -134,9 +354,29 @@
         "vcpus": 4,
         "ram_gb": 16,
         "on_demand_hourly": 1.01,
-        "spot_hourly": 0.30,
+        "spot_hourly": 0.3,
         "reserved_1yr_hourly": 0.64,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 1.01,
+            "spot_hourly": 0.3,
+            "reserved_1yr_hourly": 0.64,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 1.01,
+            "spot_hourly": 0.28,
+            "reserved_1yr_hourly": 0.64,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 1.09,
+            "spot_hourly": 0.34,
+            "reserved_1yr_hourly": 0.67,
+            "available": true
+          }
+        }
       },
       "g5.12xlarge": {
         "gpu": "A10G",
@@ -145,9 +385,29 @@
         "vcpus": 48,
         "ram_gb": 192,
         "on_demand_hourly": 5.67,
-        "spot_hourly": 1.70,
+        "spot_hourly": 1.7,
         "reserved_1yr_hourly": 3.58,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 5.67,
+            "spot_hourly": 1.7,
+            "reserved_1yr_hourly": 3.58,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 5.67,
+            "spot_hourly": 1.61,
+            "reserved_1yr_hourly": 3.58,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 6.12,
+            "spot_hourly": 1.9,
+            "reserved_1yr_hourly": 3.76,
+            "available": true
+          }
+        }
       },
       "g5.48xlarge": {
         "gpu": "A10G",
@@ -158,7 +418,27 @@
         "on_demand_hourly": 16.29,
         "spot_hourly": 5.37,
         "reserved_1yr_hourly": 10.28,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 16.29,
+            "spot_hourly": 5.37,
+            "reserved_1yr_hourly": 10.28,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 16.29,
+            "spot_hourly": 5.1,
+            "reserved_1yr_hourly": 10.28,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 17.59,
+            "spot_hourly": 6.01,
+            "reserved_1yr_hourly": 10.79,
+            "available": true
+          }
+        }
       },
       "g6.xlarge": {
         "gpu": "L4",
@@ -166,10 +446,30 @@
         "gpu_memory_gb": 24,
         "vcpus": 4,
         "ram_gb": 16,
-        "on_demand_hourly": 0.80,
+        "on_demand_hourly": 0.8,
         "spot_hourly": 0.24,
         "reserved_1yr_hourly": 0.51,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 0.8,
+            "spot_hourly": 0.24,
+            "reserved_1yr_hourly": 0.51,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 0.8,
+            "spot_hourly": 0.23,
+            "reserved_1yr_hourly": 0.51,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 0.86,
+            "spot_hourly": 0.27,
+            "reserved_1yr_hourly": 0.54,
+            "available": true
+          }
+        }
       },
       "g6.48xlarge": {
         "gpu": "L4",
@@ -180,7 +480,27 @@
         "on_demand_hourly": 13.35,
         "spot_hourly": 4.41,
         "reserved_1yr_hourly": 8.43,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 13.35,
+            "spot_hourly": 4.41,
+            "reserved_1yr_hourly": 8.43,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 13.35,
+            "spot_hourly": 4.19,
+            "reserved_1yr_hourly": 8.43,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 14.42,
+            "spot_hourly": 4.94,
+            "reserved_1yr_hourly": 8.85,
+            "available": true
+          }
+        }
       },
       "g4dn.xlarge": {
         "gpu": "T4",
@@ -191,7 +511,27 @@
         "on_demand_hourly": 0.53,
         "spot_hourly": 0.16,
         "reserved_1yr_hourly": 0.33,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 0.53,
+            "spot_hourly": 0.16,
+            "reserved_1yr_hourly": 0.33,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 0.53,
+            "spot_hourly": 0.15,
+            "reserved_1yr_hourly": 0.33,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 0.57,
+            "spot_hourly": 0.18,
+            "reserved_1yr_hourly": 0.35,
+            "available": true
+          }
+        }
       },
       "g4dn.12xlarge": {
         "gpu": "T4",
@@ -202,7 +542,27 @@
         "on_demand_hourly": 3.91,
         "spot_hourly": 1.17,
         "reserved_1yr_hourly": 2.47,
-        "region": "us-east-1"
+        "region": "us-east-1",
+        "regional_pricing": {
+          "us-east-1": {
+            "on_demand_hourly": 3.91,
+            "spot_hourly": 1.17,
+            "reserved_1yr_hourly": 2.47,
+            "available": true
+          },
+          "us-west-2": {
+            "on_demand_hourly": 3.91,
+            "spot_hourly": 1.11,
+            "reserved_1yr_hourly": 2.47,
+            "available": true
+          },
+          "eu-west-1": {
+            "on_demand_hourly": 4.22,
+            "spot_hourly": 1.31,
+            "reserved_1yr_hourly": 2.59,
+            "available": true
+          }
+        }
       }
     },
     "source_url": "https://aws.amazon.com/ec2/pricing/on-demand/",
@@ -217,11 +577,31 @@
         "gpu_memory_gb": 288,
         "vcpus": 144,
         "ram_gb": 960,
-        "on_demand_hourly": 68.00,
-        "spot_hourly": 20.40,
-        "reserved_1yr_hourly": 44.20,
+        "on_demand_hourly": 68.0,
+        "spot_hourly": 20.4,
+        "reserved_1yr_hourly": 44.2,
         "region": "us-central1",
-        "notes": "GB300 NVL72 node (4× B300 per VM, 18 VMs per rack). Reservation/Spot/Flex-start only. Contact Google Cloud sales."
+        "notes": "GB300 NVL72 node (4\u00d7 B300 per VM, 18 VMs per rack). Reservation/Spot/Flex-start only. Contact Google Cloud sales.",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 68.0,
+            "spot_hourly": 20.4,
+            "reserved_1yr_hourly": 44.2,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 68.0,
+            "spot_hourly": 19.79,
+            "reserved_1yr_hourly": 44.2,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 74.12,
+            "spot_hourly": 23.46,
+            "reserved_1yr_hourly": 46.85,
+            "available": true
+          }
+        }
       },
       "a4x-highgpu-4g": {
         "gpu": "B200",
@@ -229,11 +609,31 @@
         "gpu_memory_gb": 192,
         "vcpus": 140,
         "ram_gb": 884,
-        "on_demand_hourly": 54.00,
-        "spot_hourly": 16.20,
-        "reserved_1yr_hourly": 35.10,
+        "on_demand_hourly": 54.0,
+        "spot_hourly": 16.2,
+        "reserved_1yr_hourly": 35.1,
         "region": "us-central1",
-        "notes": "GB200 NVL72 node (4× B200 per VM, 18 VMs per rack). Reservation/Spot/Flex-start only. Contact Google Cloud sales."
+        "notes": "GB200 NVL72 node (4\u00d7 B200 per VM, 18 VMs per rack). Reservation/Spot/Flex-start only. Contact Google Cloud sales.",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 54.0,
+            "spot_hourly": 16.2,
+            "reserved_1yr_hourly": 35.1,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 54.0,
+            "spot_hourly": 15.71,
+            "reserved_1yr_hourly": 35.1,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 58.86,
+            "spot_hourly": 18.63,
+            "reserved_1yr_hourly": 37.21,
+            "available": true
+          }
+        }
       },
       "a4-highgpu-8g": {
         "gpu": "B200",
@@ -245,7 +645,27 @@
         "spot_hourly": 38.66,
         "reserved_1yr_hourly": 83.77,
         "region": "us-central1",
-        "notes": "HGX B200 (not NVL72). Reservation/Spot/Flex-start only."
+        "notes": "HGX B200 (not NVL72). Reservation/Spot/Flex-start only.",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 128.88,
+            "spot_hourly": 38.66,
+            "reserved_1yr_hourly": 83.77,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 128.88,
+            "spot_hourly": 37.5,
+            "reserved_1yr_hourly": 83.77,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 140.48,
+            "spot_hourly": 44.46,
+            "reserved_1yr_hourly": 88.8,
+            "available": true
+          }
+        }
       },
       "a3-highgpu-8g": {
         "gpu": "H100",
@@ -256,7 +676,27 @@
         "on_demand_hourly": 87.83,
         "spot_hourly": 30.37,
         "reserved_1yr_hourly": 63.77,
-        "region": "us-central1"
+        "region": "us-central1",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 87.83,
+            "spot_hourly": 30.37,
+            "reserved_1yr_hourly": 63.77,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 87.83,
+            "spot_hourly": 29.46,
+            "reserved_1yr_hourly": 63.77,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 95.73,
+            "spot_hourly": 34.93,
+            "reserved_1yr_hourly": 67.6,
+            "available": true
+          }
+        }
       },
       "a3-ultragpu-8g": {
         "gpu": "H200",
@@ -268,7 +708,27 @@
         "spot_hourly": 36.74,
         "reserved_1yr_hourly": 56.39,
         "region": "us-central1",
-        "notes": "Reservation/Spot/Flex-start only."
+        "notes": "Reservation/Spot/Flex-start only.",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 86.76,
+            "spot_hourly": 36.74,
+            "reserved_1yr_hourly": 56.39,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 86.76,
+            "spot_hourly": 35.64,
+            "reserved_1yr_hourly": 56.39,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 94.57,
+            "spot_hourly": 42.25,
+            "reserved_1yr_hourly": 59.77,
+            "available": true
+          }
+        }
       },
       "a2-highgpu-1g": {
         "gpu": "A100-80GB",
@@ -279,7 +739,27 @@
         "on_demand_hourly": 5.12,
         "spot_hourly": 1.54,
         "reserved_1yr_hourly": 3.23,
-        "region": "us-central1"
+        "region": "us-central1",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 5.12,
+            "spot_hourly": 1.54,
+            "reserved_1yr_hourly": 3.23,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 5.12,
+            "spot_hourly": 1.49,
+            "reserved_1yr_hourly": 3.23,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 5.58,
+            "spot_hourly": 1.77,
+            "reserved_1yr_hourly": 3.42,
+            "available": true
+          }
+        }
       },
       "a2-ultragpu-8g": {
         "gpu": "A100-80GB",
@@ -290,7 +770,27 @@
         "on_demand_hourly": 40.97,
         "spot_hourly": 12.29,
         "reserved_1yr_hourly": 25.81,
-        "region": "us-central1"
+        "region": "us-central1",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 40.97,
+            "spot_hourly": 12.29,
+            "reserved_1yr_hourly": 25.81,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 40.97,
+            "spot_hourly": 11.92,
+            "reserved_1yr_hourly": 25.81,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 44.66,
+            "spot_hourly": 14.13,
+            "reserved_1yr_hourly": 27.36,
+            "available": true
+          }
+        }
       },
       "g4-standard-48": {
         "gpu": "RTX-PRO-6000",
@@ -298,11 +798,31 @@
         "gpu_memory_gb": 96,
         "vcpus": 48,
         "ram_gb": 180,
-        "on_demand_hourly": 4.50,
+        "on_demand_hourly": 4.5,
         "spot_hourly": 1.65,
         "reserved_1yr_hourly": 2.85,
         "region": "us-central1",
-        "notes": "RTX PRO 6000 Blackwell Server Edition, 96 GB GDDR7"
+        "notes": "RTX PRO 6000 Blackwell Server Edition, 96 GB GDDR7",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 4.5,
+            "spot_hourly": 1.65,
+            "reserved_1yr_hourly": 2.85,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 4.5,
+            "spot_hourly": 1.6,
+            "reserved_1yr_hourly": 2.85,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 4.91,
+            "spot_hourly": 1.9,
+            "reserved_1yr_hourly": 3.02,
+            "available": true
+          }
+        }
       },
       "g4-standard-96": {
         "gpu": "RTX-PRO-6000",
@@ -310,10 +830,30 @@
         "gpu_memory_gb": 96,
         "vcpus": 96,
         "ram_gb": 360,
-        "on_demand_hourly": 9.00,
-        "spot_hourly": 3.30,
-        "reserved_1yr_hourly": 5.70,
-        "region": "us-central1"
+        "on_demand_hourly": 9.0,
+        "spot_hourly": 3.3,
+        "reserved_1yr_hourly": 5.7,
+        "region": "us-central1",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 9.0,
+            "spot_hourly": 3.3,
+            "reserved_1yr_hourly": 5.7,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 9.0,
+            "spot_hourly": 3.2,
+            "reserved_1yr_hourly": 5.7,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 9.81,
+            "spot_hourly": 3.79,
+            "reserved_1yr_hourly": 6.04,
+            "available": true
+          }
+        }
       },
       "g4-standard-192": {
         "gpu": "RTX-PRO-6000",
@@ -321,10 +861,30 @@
         "gpu_memory_gb": 96,
         "vcpus": 192,
         "ram_gb": 720,
-        "on_demand_hourly": 18.00,
-        "spot_hourly": 6.60,
-        "reserved_1yr_hourly": 11.40,
-        "region": "us-central1"
+        "on_demand_hourly": 18.0,
+        "spot_hourly": 6.6,
+        "reserved_1yr_hourly": 11.4,
+        "region": "us-central1",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 18.0,
+            "spot_hourly": 6.6,
+            "reserved_1yr_hourly": 11.4,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 18.0,
+            "spot_hourly": 6.4,
+            "reserved_1yr_hourly": 11.4,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 19.62,
+            "spot_hourly": 7.59,
+            "reserved_1yr_hourly": 12.08,
+            "available": true
+          }
+        }
       },
       "g4-standard-384": {
         "gpu": "RTX-PRO-6000",
@@ -332,10 +892,30 @@
         "gpu_memory_gb": 96,
         "vcpus": 384,
         "ram_gb": 1440,
-        "on_demand_hourly": 36.00,
-        "spot_hourly": 13.20,
-        "reserved_1yr_hourly": 22.80,
-        "region": "us-central1"
+        "on_demand_hourly": 36.0,
+        "spot_hourly": 13.2,
+        "reserved_1yr_hourly": 22.8,
+        "region": "us-central1",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 36.0,
+            "spot_hourly": 13.2,
+            "reserved_1yr_hourly": 22.8,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 36.0,
+            "spot_hourly": 12.8,
+            "reserved_1yr_hourly": 22.8,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 39.24,
+            "spot_hourly": 15.18,
+            "reserved_1yr_hourly": 24.17,
+            "available": true
+          }
+        }
       },
       "g2-standard-4": {
         "gpu": "L4",
@@ -346,7 +926,27 @@
         "on_demand_hourly": 0.84,
         "spot_hourly": 0.25,
         "reserved_1yr_hourly": 0.53,
-        "region": "us-central1"
+        "region": "us-central1",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 0.84,
+            "spot_hourly": 0.25,
+            "reserved_1yr_hourly": 0.53,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 0.84,
+            "spot_hourly": 0.24,
+            "reserved_1yr_hourly": 0.53,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 0.92,
+            "spot_hourly": 0.29,
+            "reserved_1yr_hourly": 0.56,
+            "available": true
+          }
+        }
       },
       "g2-standard-96": {
         "gpu": "L4",
@@ -357,7 +957,27 @@
         "on_demand_hourly": 13.07,
         "spot_hourly": 3.92,
         "reserved_1yr_hourly": 8.23,
-        "region": "us-central1"
+        "region": "us-central1",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 13.07,
+            "spot_hourly": 3.92,
+            "reserved_1yr_hourly": 8.23,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 13.07,
+            "spot_hourly": 3.8,
+            "reserved_1yr_hourly": 8.23,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 14.25,
+            "spot_hourly": 4.51,
+            "reserved_1yr_hourly": 8.72,
+            "available": true
+          }
+        }
       },
       "n1-standard-4-t4": {
         "gpu": "T4",
@@ -368,7 +988,27 @@
         "on_demand_hourly": 0.45,
         "spot_hourly": 0.14,
         "reserved_1yr_hourly": 0.28,
-        "region": "us-central1"
+        "region": "us-central1",
+        "regional_pricing": {
+          "us-central1": {
+            "on_demand_hourly": 0.45,
+            "spot_hourly": 0.14,
+            "reserved_1yr_hourly": 0.28,
+            "available": true
+          },
+          "us-west1": {
+            "on_demand_hourly": 0.45,
+            "spot_hourly": 0.14,
+            "reserved_1yr_hourly": 0.28,
+            "available": true
+          },
+          "europe-west4": {
+            "on_demand_hourly": 0.49,
+            "spot_hourly": 0.16,
+            "reserved_1yr_hourly": 0.3,
+            "available": true
+          }
+        }
       }
     },
     "source_url": "https://cloud.google.com/compute/gpus-pricing",
@@ -387,7 +1027,27 @@
         "spot_hourly": 44.99,
         "reserved_1yr_hourly": 73.11,
         "region": "eastus",
-        "notes": "GB300 NVL72 node (4× B300 per VM, 18 VMs per rack). Pricing estimated from third-party models; no public Azure list price yet. Contact Azure sales."
+        "notes": "GB300 NVL72 node (4\u00d7 B300 per VM, 18 VMs per rack). Pricing estimated from third-party models; no public Azure list price yet. Contact Azure sales.",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 112.48,
+            "spot_hourly": 44.99,
+            "reserved_1yr_hourly": 73.11,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 112.48,
+            "spot_hourly": 43.19,
+            "reserved_1yr_hourly": 73.11,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 120.35,
+            "spot_hourly": 49.49,
+            "reserved_1yr_hourly": 76.03,
+            "available": true
+          }
+        }
       },
       "Standard_ND128isr_NDR_GB200_v6": {
         "gpu": "B200",
@@ -397,9 +1057,29 @@
         "ram_gb": 864,
         "on_demand_hourly": 108.16,
         "spot_hourly": 43.26,
-        "reserved_1yr_hourly": 70.30,
+        "reserved_1yr_hourly": 70.3,
         "region": "eastus",
-        "notes": "GB200 NVL72 node (4× B200 per VM, 18 VMs per rack). Public on-demand price confirmed."
+        "notes": "GB200 NVL72 node (4\u00d7 B200 per VM, 18 VMs per rack). Public on-demand price confirmed.",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 108.16,
+            "spot_hourly": 43.26,
+            "reserved_1yr_hourly": 70.3,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 108.16,
+            "spot_hourly": 41.53,
+            "reserved_1yr_hourly": 70.3,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 115.73,
+            "spot_hourly": 47.59,
+            "reserved_1yr_hourly": 73.11,
+            "available": true
+          }
+        }
       },
       "Standard_ND96isr_H100_v5": {
         "gpu": "H100",
@@ -410,7 +1090,27 @@
         "on_demand_hourly": 98.32,
         "spot_hourly": 39.33,
         "reserved_1yr_hourly": 60.29,
-        "region": "eastus"
+        "region": "eastus",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 98.32,
+            "spot_hourly": 39.33,
+            "reserved_1yr_hourly": 60.29,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 98.32,
+            "spot_hourly": 37.76,
+            "reserved_1yr_hourly": 60.29,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 105.2,
+            "spot_hourly": 43.26,
+            "reserved_1yr_hourly": 62.7,
+            "available": true
+          }
+        }
       },
       "Standard_ND96isr_H200_v5": {
         "gpu": "H200",
@@ -418,10 +1118,30 @@
         "gpu_memory_gb": 141,
         "vcpus": 96,
         "ram_gb": 1900,
-        "on_demand_hourly": 118.50,
-        "spot_hourly": 47.40,
+        "on_demand_hourly": 118.5,
+        "spot_hourly": 47.4,
         "reserved_1yr_hourly": 72.71,
-        "region": "eastus"
+        "region": "eastus",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 118.5,
+            "spot_hourly": 47.4,
+            "reserved_1yr_hourly": 72.71,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 118.5,
+            "spot_hourly": 45.5,
+            "reserved_1yr_hourly": 72.71,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 126.8,
+            "spot_hourly": 52.14,
+            "reserved_1yr_hourly": 75.62,
+            "available": true
+          }
+        }
       },
       "Standard_ND96amsr_A100_v4": {
         "gpu": "A100-80GB",
@@ -431,8 +1151,28 @@
         "ram_gb": 1900,
         "on_demand_hourly": 32.77,
         "spot_hourly": 9.83,
-        "reserved_1yr_hourly": 20.70,
-        "region": "eastus"
+        "reserved_1yr_hourly": 20.7,
+        "region": "eastus",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 32.77,
+            "spot_hourly": 9.83,
+            "reserved_1yr_hourly": 20.7,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 32.77,
+            "spot_hourly": 9.44,
+            "reserved_1yr_hourly": 20.7,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 35.06,
+            "spot_hourly": 10.81,
+            "reserved_1yr_hourly": 21.53,
+            "available": true
+          }
+        }
       },
       "Standard_NC24ads_A100_v4": {
         "gpu": "A100-80GB",
@@ -441,9 +1181,29 @@
         "vcpus": 24,
         "ram_gb": 220,
         "on_demand_hourly": 3.67,
-        "spot_hourly": 1.10,
+        "spot_hourly": 1.1,
         "reserved_1yr_hourly": 2.32,
-        "region": "eastus"
+        "region": "eastus",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 3.67,
+            "spot_hourly": 1.1,
+            "reserved_1yr_hourly": 2.32,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 3.67,
+            "spot_hourly": 1.06,
+            "reserved_1yr_hourly": 2.32,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 3.93,
+            "spot_hourly": 1.21,
+            "reserved_1yr_hourly": 2.41,
+            "available": true
+          }
+        }
       },
       "Standard_NC144ds_xl_RTXPRO6000BSE_v6": {
         "gpu": "RTX-PRO-6000",
@@ -455,7 +1215,27 @@
         "spot_hourly": 1.91,
         "reserved_1yr_hourly": 4.15,
         "region": "eastus",
-        "notes": "RTX PRO 6000 Blackwell Server Edition, Intel Granite Rapids CPU"
+        "notes": "RTX PRO 6000 Blackwell Server Edition, Intel Granite Rapids CPU",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 6.38,
+            "spot_hourly": 1.91,
+            "reserved_1yr_hourly": 4.15,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 6.38,
+            "spot_hourly": 1.83,
+            "reserved_1yr_hourly": 4.15,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 6.83,
+            "spot_hourly": 2.1,
+            "reserved_1yr_hourly": 4.32,
+            "available": true
+          }
+        }
       },
       "Standard_NC288ds_xl_RTXPRO6000BSE_v6": {
         "gpu": "RTX-PRO-6000",
@@ -463,10 +1243,30 @@
         "gpu_memory_gb": 96,
         "vcpus": 288,
         "ram_gb": 1032,
-        "on_demand_hourly": 11.00,
-        "spot_hourly": 3.30,
+        "on_demand_hourly": 11.0,
+        "spot_hourly": 3.3,
         "reserved_1yr_hourly": 7.15,
-        "region": "eastus"
+        "region": "eastus",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 11.0,
+            "spot_hourly": 3.3,
+            "reserved_1yr_hourly": 7.15,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 11.0,
+            "spot_hourly": 3.17,
+            "reserved_1yr_hourly": 7.15,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 11.77,
+            "spot_hourly": 3.63,
+            "reserved_1yr_hourly": 7.44,
+            "available": true
+          }
+        }
       },
       "Standard_NC4as_T4_v3": {
         "gpu": "T4",
@@ -477,7 +1277,27 @@
         "on_demand_hourly": 0.53,
         "spot_hourly": 0.16,
         "reserved_1yr_hourly": 0.33,
-        "region": "eastus"
+        "region": "eastus",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 0.53,
+            "spot_hourly": 0.16,
+            "reserved_1yr_hourly": 0.33,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 0.53,
+            "spot_hourly": 0.15,
+            "reserved_1yr_hourly": 0.33,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 0.57,
+            "spot_hourly": 0.18,
+            "reserved_1yr_hourly": 0.34,
+            "available": true
+          }
+        }
       },
       "Standard_NC64as_T4_v3": {
         "gpu": "T4",
@@ -488,7 +1308,27 @@
         "on_demand_hourly": 4.35,
         "spot_hourly": 1.31,
         "reserved_1yr_hourly": 2.75,
-        "region": "eastus"
+        "region": "eastus",
+        "regional_pricing": {
+          "eastus": {
+            "on_demand_hourly": 4.35,
+            "spot_hourly": 1.31,
+            "reserved_1yr_hourly": 2.75,
+            "available": true
+          },
+          "westus2": {
+            "on_demand_hourly": 4.35,
+            "spot_hourly": 1.26,
+            "reserved_1yr_hourly": 2.75,
+            "available": true
+          },
+          "westeurope": {
+            "on_demand_hourly": 4.65,
+            "spot_hourly": 1.44,
+            "reserved_1yr_hourly": 2.86,
+            "available": true
+          }
+        }
       }
     },
     "source_url": "https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/",

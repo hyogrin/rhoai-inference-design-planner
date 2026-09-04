@@ -619,7 +619,9 @@ async def calculate_cost(state: PlannerState) -> dict:
     elif platform == "on-premise":
         cost_estimate = _calculate_onprem_tco(pricing, gpu_type, gpu_count)
     else:
-        cost_estimate = _calculate_cloud_cost(pricing, platform, gpu_type, gpu_count)
+        instance_type = hardware.get("instance_type")
+        cost_estimate = _calculate_cloud_cost(pricing, platform, gpu_type, gpu_count,
+                                              instance_type=instance_type)
 
     existing_rec = state.get("recommendation") or {}
     existing_rec["cost_estimate"] = cost_estimate
@@ -653,9 +655,64 @@ def _detect_platform(workload: dict, hardware: dict) -> str | None:
     return None
 
 
-def _calculate_cloud_cost(pricing, platform: str, gpu_type: str, gpu_count: int) -> dict:
-    """Calculate cloud cost from vendor pricing data."""
-    # Map our GPU IDs to pricing connector GPU names
+def _calculate_cloud_cost(pricing, platform: str, gpu_type: str, gpu_count: int,
+                          instance_type: str | None = None) -> dict:
+    """Calculate cloud cost from vendor pricing data.
+
+    If instance_type is provided, look it up directly (exact match).
+    Otherwise, fall back to the existing GPU-name substring search.
+    """
+    import math as _math
+
+    # --- Path A: exact instance lookup (new flow) ---
+    if instance_type:
+        inst = pricing.get_instance_by_name(platform, instance_type)
+        if inst:
+            region, od, spot, res = _pick_regional_price(inst)
+            igpu = inst["gpu_count"]
+            num_inst = _math.ceil(gpu_count / igpu) if gpu_count > igpu else 1
+            actual_gpus = igpu * num_inst
+            on_demand_hr = od * num_inst
+            spot_hr = spot * num_inst
+            reserved_hr = res * num_inst
+            per_gpu_hr = round(on_demand_hr / actual_gpus, 2) if actual_gpus else 0
+
+            note = ""
+            if actual_gpus > gpu_count:
+                note = f" (instance provides {actual_gpus} GPUs; {actual_gpus - gpu_count} unused)"
+
+            return {
+                "type": "cloud",
+                "platform": platform,
+                "provider": inst["provider"],
+                "instance": instance_type,
+                "instance_type": instance_type,
+                "instance_gpu_count": igpu,
+                "num_instances": num_inst,
+                "gpu_type": gpu_type,
+                "gpu_count": gpu_count,
+                "actual_gpu_count": actual_gpus,
+                "region": region,
+                "region_note": f"Pricing based on {region}",
+                "on_demand_hourly_usd": round(on_demand_hr, 2),
+                "spot_hourly_usd": round(spot_hr, 2),
+                "reserved_1yr_hourly_usd": round(reserved_hr, 2),
+                "normalized_per_gpu_hourly": per_gpu_hr,
+                "monthly_on_demand_usd": round(on_demand_hr * 730, 0),
+                "monthly_spot_usd": round(spot_hr * 730, 0),
+                "monthly_reserved_usd": round(reserved_hr * 730, 0),
+                "source_url": _PRICING_URLS.get(platform, ""),
+                "summary": (
+                    f"{inst['provider']} {num_inst}× {instance_type} "
+                    f"({igpu}×{inst.get('gpu', gpu_type)} each, {region}): "
+                    f"On-demand ${on_demand_hr:.2f}/hr, Spot ${spot_hr:.2f}/hr, "
+                    f"Reserved ${reserved_hr:.2f}/hr{note}"
+                ),
+            }
+        logger.warning("Instance '%s' not found for platform '%s'; falling back to auto-pick",
+                        instance_type, platform)
+
+    # --- Path B: auto-pick (legacy / on-premise-only GPUs) ---
     gpu_name_map = {
         "B300-288GB": "B300", "GB300-288GB": "GB300",
         "B200-192GB": "B200", "GB200-192GB": "GB200",
@@ -666,14 +723,11 @@ def _calculate_cloud_cost(pricing, platform: str, gpu_type: str, gpu_count: int)
     }
     search_gpu = gpu_name_map.get(gpu_type, gpu_type.split("-")[0])
 
-    # GB200/GB300 NVL72 systems use B200/B300 GPUs internally;
-    # search for both names so we find all matching cloud instances
     search_gpus = [search_gpu]
     _gb_fallback = {"GB200": "B200", "GB300": "B300"}
     if search_gpu in _gb_fallback:
         search_gpus.append(_gb_fallback[search_gpu])
 
-    # Get all instances with this GPU type (no minimum filter)
     instances = []
     for sg in search_gpus:
         instances.extend(pricing.get_cloud_instances_for_gpu(sg, min_gpu_count=1))
@@ -707,32 +761,28 @@ def _calculate_cloud_cost(pricing, platform: str, gpu_type: str, gpu_count: int)
             "summary": f"${hourly:.2f}/hr (reference rate, no exact instance match)",
         }
 
-    # Select instance: prefer exact match, then smallest that fits TP requirement
-    # For TP to work, all GPUs must be in one machine, so pick the smallest
-    # instance with enough GPUs. If none fits, use largest and multiply.
-    import math as _math
     fits = [i for i in platform_instances if i["gpu_count"] >= gpu_count]
     if fits:
         best = min(fits, key=lambda x: x["gpu_count"])
     else:
         best = max(platform_instances, key=lambda x: x["gpu_count"])
 
-    # Cloud instances are indivisible: ceil up to whole instances
-    import math as _math
     instance_gpu_count = best["gpu_count"]
     num_instances = _math.ceil(gpu_count / instance_gpu_count)
 
-    on_demand_hr = best["on_demand_hourly"] * num_instances
-    spot_hr = best.get("spot_hourly", 0) * num_instances
-    reserved_hr = best.get("reserved_1yr_hourly", 0) * num_instances
+    region, on_demand_hr_unit, spot_hr_unit, reserved_hr_unit = _pick_regional_price(best)
+    on_demand_hr = on_demand_hr_unit * num_instances
+    spot_hr = spot_hr_unit * num_instances
+    reserved_hr = reserved_hr_unit * num_instances
 
     provider_name = best["provider"]
     instance_name = best["instance_name"]
 
     source_urls = _PRICING_URLS.get(platform, "")
+    actual_gpus = instance_gpu_count * num_instances
+    per_gpu_hr = round(on_demand_hr / actual_gpus, 2) if actual_gpus else 0
 
     note = ""
-    actual_gpus = instance_gpu_count * num_instances
     if actual_gpus > gpu_count:
         note = f" (instance provides {actual_gpus} GPUs; {actual_gpus - gpu_count} unused)"
 
@@ -741,12 +791,15 @@ def _calculate_cloud_cost(pricing, platform: str, gpu_type: str, gpu_count: int)
         "platform": platform,
         "provider": provider_name,
         "instance": instance_name,
+        "instance_type": instance_name,
         "instance_gpu_count": instance_gpu_count,
         "num_instances": num_instances,
         "gpu_type": gpu_type,
         "gpu_count": gpu_count,
         "actual_gpu_count": actual_gpus,
-        "region": best.get("region", ""),
+        "region": region,
+        "region_note": f"Pricing based on {region}",
+        "normalized_per_gpu_hourly": per_gpu_hr,
         "on_demand_hourly_usd": round(on_demand_hr, 2),
         "spot_hourly_usd": round(spot_hr, 2),
         "reserved_1yr_hourly_usd": round(reserved_hr, 2),
@@ -755,11 +808,36 @@ def _calculate_cloud_cost(pricing, platform: str, gpu_type: str, gpu_count: int)
         "monthly_reserved_usd": round(reserved_hr * 730, 0),
         "source_url": source_urls,
         "summary": (
-            f"{provider_name} {num_instances}× {instance_name} ({instance_gpu_count}×{best['gpu']} each): "
+            f"{provider_name} {num_instances}× {instance_name} ({instance_gpu_count}×{best['gpu']} each, {region}): "
             f"On-demand ${on_demand_hr:.2f}/hr, Spot ${spot_hr:.2f}/hr, "
             f"Reserved ${reserved_hr:.2f}/hr{note}"
         ),
     }
+
+
+def _pick_regional_price(instance: dict) -> tuple[str, float, float, float]:
+    """Pick the best available regional price from an instance record.
+
+    Returns (region, on_demand_hourly, spot_hourly, reserved_1yr_hourly).
+    Prefers first available region in regional_pricing; falls back to
+    top-level price fields.
+    """
+    rp = instance.get("regional_pricing")
+    if rp:
+        for region, prices in rp.items():
+            if prices.get("available", True):
+                return (
+                    region,
+                    prices["on_demand_hourly"],
+                    prices.get("spot_hourly", 0),
+                    prices.get("reserved_1yr_hourly", 0),
+                )
+    return (
+        instance.get("region", ""),
+        instance.get("on_demand_hourly", 0),
+        instance.get("spot_hourly", 0),
+        instance.get("reserved_1yr_hourly", 0),
+    )
 
 
 def _resolve_scaling_key(gpu_type: str) -> str:

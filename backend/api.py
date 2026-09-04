@@ -482,7 +482,11 @@ def _to_list_item(design) -> DesignSessionListItem:
         if sid == "deployment_config" and data:
             platform = data.get("platform") or data.get("environment_type") or "on-premise"
             platform_label = {"on-premise": "On-Premise", "on_prem": "On-Premise", "aws": "AWS", "azure": "Azure", "gcp": "GCP"}.get(str(platform).lower(), str(platform))
-            gpu_config = f"{data.get('gpu_count', '?')}× {data.get('gpu_type', '?')} ({platform_label})"
+            inst_type = data.get("instance_type")
+            if inst_type:
+                gpu_config = f"{data.get('gpu_count', '?')}× {data.get('gpu_type', '?')} ({platform_label} / {inst_type})"
+            else:
+                gpu_config = f"{data.get('gpu_count', '?')}× {data.get('gpu_type', '?')} ({platform_label})"
         if sid == "memory_estimate" and data:
             memory_utilization = f"{data.get('utilization_pct', '?')}%"
             fits = data.get("fits")
@@ -598,6 +602,8 @@ async def _stream_agui(
             hardware_inventory["gpu_type"] = forwarded_props["gpu_type"]
         if forwarded_props.get("gpu_count"):
             hardware_inventory["gpu_count"] = forwarded_props["gpu_count"]
+        if forwarded_props.get("instance_type"):
+            hardware_inventory["instance_type"] = forwarded_props["instance_type"]
 
         graph_input = {
             "session_id": thread_id[:12],

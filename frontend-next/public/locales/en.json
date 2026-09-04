@@ -17,6 +17,8 @@
   "step1.totalGpuMemory": "Total GPU memory",
   "step1.interconnect": "Interconnect",
   "step1.configSummary": "Configuration Summary",
+  "step1.instanceType": "Cloud Instance",
+  "step1.gpuCountLocked": "GPU count (fixed by instance)",
 
   "step2.title": "Evidence Discovery",
   "step2.description": "Gathering deployment evidence from multiple sources to inform recommendations.",
