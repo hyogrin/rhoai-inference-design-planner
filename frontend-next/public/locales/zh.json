@@ -97,5 +97,6 @@
   "nav.next": "下一步",
   "nav.startAnalysis": "开始分析",
   "nav.analyzing": "分析中...",
-  "nav.stepOf": "第 {current} 步，共 {total} 步"
+  "nav.stepOf": "第 {current} 步，共 {total} 步",
+  "topBanner.disclaimer": "分析结果可能因模型性能而异。Inference Design Planner 可能会出错。请务必核实重要信息。"
 }

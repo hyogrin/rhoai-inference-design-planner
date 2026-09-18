@@ -446,10 +446,13 @@ def main() -> None:
 
     if settings.mlflow_tracking_insecure_tls:
         os.environ.setdefault("MLFLOW_TRACKING_INSECURE_TLS", "true")
-    if settings.mlflow_tracking_token:
-        os.environ.setdefault("MLFLOW_TRACKING_TOKEN", settings.mlflow_tracking_token)
     if settings.mlflow_workspace:
         os.environ.setdefault("MLFLOW_WORKSPACE", settings.mlflow_workspace)
+
+    # Use kubernetes-namespaced auth (requires `oc login` + `oc project`)
+    # Do NOT set MLFLOW_TRACKING_TOKEN — it conflicts with kubernetes auth
+    os.environ["MLFLOW_TRACKING_AUTH"] = "kubernetes-namespaced"
+    os.environ.pop("MLFLOW_TRACKING_TOKEN", None)
 
     os.environ.setdefault("MLFLOW_HTTP_REQUEST_TIMEOUT", "10")
     os.environ.setdefault("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "1")

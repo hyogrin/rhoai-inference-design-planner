@@ -49,10 +49,10 @@ cp sample.env .env
 make db-migrate
 
 # Start backend
-make run-backend
+make backend-start
 
 # Start frontend (in another terminal)
-make run-frontend
+make frontend-start
 ```
 
 ### Docker Compose

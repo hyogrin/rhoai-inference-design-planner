@@ -97,5 +97,6 @@
   "nav.next": "Next",
   "nav.startAnalysis": "Start Analysis",
   "nav.analyzing": "Analyzing...",
-  "nav.stepOf": "Step {current} of {total}"
+  "nav.stepOf": "Step {current} of {total}",
+  "topBanner.disclaimer": "Analysis results may vary depending on model performance. Inference Design Planner can make mistakes. Please double-check important information."
 }

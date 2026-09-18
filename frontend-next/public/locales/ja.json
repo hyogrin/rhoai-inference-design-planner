@@ -97,5 +97,6 @@
   "nav.next": "次へ",
   "nav.startAnalysis": "分析開始",
   "nav.analyzing": "分析中...",
-  "nav.stepOf": "{total} ステップ中 {current} ステップ"
+  "nav.stepOf": "{total} ステップ中 {current} ステップ",
+  "topBanner.disclaimer": "分析結果はモデルの性能により異なる場合があります。Inference Design Planner は間違いを起こす可能性があります。重要な情報は必ずご確認ください。"
 }

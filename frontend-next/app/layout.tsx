@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { I18nProvider } from "@/lib/i18n";
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,10 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
-        <div className="border-b border-red-500 bg-red-50 px-4 py-1.5 text-center text-sm font-semibold text-red-600">
-          ⚠️ INTERNAL USE ONLY — DO NOT SHARE EXTERNALLY
-        </div>
-        <I18nProvider>{children}</I18nProvider>
+        <I18nProvider>
+          <DisclaimerBanner />
+          {children}
+        </I18nProvider>
       </body>
     </html>
   );
