@@ -44,7 +44,7 @@ config:
   APP_ENV: production
   APP_LOG_LEVEL: INFO
   APP_CORS_ORIGINS: "https://inference-planner.apps.openshift-cluster.sandbox3031.opentlc.com"
-  LLM_MODEL_NAME: redhatai-gemma-4-12b-it
+  LLM_MODEL_NAME: glm-53-flash
   VERIFY_SSL: "false"
   MLFLOW_TRACKING_URI: "https://rh-ai.apps.openshift-cluster.sandbox3031.opentlc.com/mlflow"
   MLFLOW_TRACKING_INSECURE_TLS: "true"
@@ -54,8 +54,8 @@ config:
   SEARXNG_URL: "https://mcp-searxng-mcp-servers.apps.openshift-cluster.sandbox3031.opentlc.com"
 
 secret:
-  OPENAI_API_KEY: not-needed
-  OPENAI_BASE_URL: "https://gemma-12b-direct-demo.apps.openshift-cluster.sandbox3031.opentlc.com/v1"
+  OPENAI_API_KEY: sk-oai-1ThWxHclnScNcNXFc_71Z5mqjBeRTdqvIfqu83zvjgpJVRHjQdhCwajjw8tSR
+  OPENAI_BASE_URL: "https://maas.apps.ocp.cloud.rhai-tmm.dev/prelude-maas/glm-53-flash/v1"
   DATABASE_URL: "postgresql+asyncpg://planner:planner@postgresql:5432/inference_planner"
   DATABASE_URL_SYNC: "postgresql://planner:planner@postgresql:5432/inference_planner"
   MLFLOW_TRACKING_TOKEN: "sha256~O31jEAEXquvNwOhtvzh5vcuef2uvyFegwjjiFgONRZA"

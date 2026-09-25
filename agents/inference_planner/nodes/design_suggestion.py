@@ -32,7 +32,11 @@ except ImportError:
     pass
 
 
-def _precision_label(bits: int) -> str:
+def _precision_label(bits: int, weight_precision: str | None = None) -> str:
+    if weight_precision:
+        wp = weight_precision.lower()
+        if "mxfp4" in wp or "nvfp4" in wp:
+            return weight_precision
     return {4: "INT4", 8: "FP8", 16: "FP16", 32: "FP32"}.get(bits, f"FP{bits}")
 
 
@@ -153,6 +157,7 @@ def _build_context(state: PlannerState) -> dict[str, str]:
 
     # TTFT input length assumption (must match sizing.py)
     ttft_input_tokens = perf.get("ttft_assumed_input_tokens", 512)
+    avg_output_tokens = perf.get("avg_output_tokens") or workload.get("avg_output_tokens") or 128
 
     return {
         "model_repo_id": state.get("model_repo_id", "Unknown"),
@@ -161,7 +166,7 @@ def _build_context(state: PlannerState) -> dict[str, str]:
         "parameters_display": mem.get("parameters_billions", "?"),
         "context_length": arch.get("max_position_embeddings") or arch.get("max_sequence_length") or "Unknown",
         "precision_bits": mem.get("precision_bits", 16),
-        "precision_label": _precision_label(mem.get("precision_bits", 16)),
+        "precision_label": _precision_label(mem.get("precision_bits", 16), model_analysis.get("weight_precision")),
         "quantization_method": quantization_method,
         "weight_source": weight_source,
         "platform": platform,
@@ -195,6 +200,7 @@ def _build_context(state: PlannerState) -> dict[str, str]:
         "ridge_batch": perf.get("ridge_batch_size", "?"),
         "max_batch_at_target": perf.get("max_batch_at_target_tpot", "?"),
         "ttft_input_tokens": ttft_input_tokens,
+        "avg_output_tokens": avg_output_tokens,
         "moe_warning": moe_warning,
         "cost_summary": cost.get("summary", "No cost data"),
         "evidence_summary": evidence_summary,
@@ -271,7 +277,7 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                         {"role": "system", "content": DESIGN_SUGGESTION_SYSTEM + lang_instruction},
                         {"role": "user", "content": user_prompt},
                     ],
-                    "max_tokens": 1500,
+                    "max_tokens": 4096,
                     "temperature": 0.3,
                 },
             )
@@ -279,7 +285,10 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
             if not resp.content:
                 raise ValueError(f"LLM returned empty response (HTTP {resp.status_code})")
             data = resp.json()
-            suggestion_text = data["choices"][0]["message"]["content"].strip()
+            msg = data["choices"][0]["message"]
+            suggestion_text = (msg.get("content") or msg.get("reasoning") or "").strip()
+            if not suggestion_text:
+                raise ValueError("LLM returned message with no content or reasoning")
 
         latency_ms = (time.monotonic() - t0) * 1000
         logger.info("Design suggestion generated (%d chars, %.0fms)", len(suggestion_text), latency_ms)

@@ -511,6 +511,12 @@ class HuggingFaceConnector:
             # Detect NVFP4 / mixed precision from config
             if method == "fp8" and "nvfp4" in repo_id.lower():
                 return "nvfp4_fp8_mixed", "nvfp4"
+            # Detect MXFP4 mixed precision (e.g., MXFP4xFP8_BLOCK)
+            repo_lower_check = repo_id.lower()
+            if "mxfp4" in repo_lower_check:
+                if "fp8" in repo_lower_check:
+                    return "mxfp4_fp8_mixed", "mxfp4+fp8"
+                return method or "mxfp4", "mxfp4"
             if method == "compressed-tensors":
                 # llm-compressor style: check config_groups for actual bits
                 config_groups = quant_config.get("config_groups", {})
@@ -529,7 +535,13 @@ class HuggingFaceConnector:
             return method, precision
 
         repo_lower = repo_id.lower()
+
+        # Detect combined mixed-precision patterns from repo name first
+        if "mxfp4" in repo_lower and ("fp8" in repo_lower or "fp8_block" in repo_lower):
+            return "mxfp4_fp8_mixed", "mxfp4+fp8"
+
         quant_patterns = {
+            "mxfp4": ("mxfp4", "mxfp4"),
             "nvfp4": ("nvfp4", "nvfp4"),
             "awq": ("awq", "int4"),
             "gptq": ("gptq", "int4"),

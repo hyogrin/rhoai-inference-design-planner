@@ -34,6 +34,7 @@ GPU_SPECS: dict[str, dict[str, Any]] = {
 # Quantization format → required GPU architectures
 QUANT_GPU_REQUIREMENTS: dict[str, set[str]] = {
     "nvfp4": {"blackwell"},
+    "mxfp4": {"blackwell"},
 }
 
 GPU_HOURLY_COST: dict[str, float] = {
@@ -138,8 +139,16 @@ async def _estimate_params_with_llm(repo_id: str) -> float | None:
     return None
 
 
-def _precision_label(bits: int) -> str:
-    """Map precision bits to a human-readable label."""
+def _precision_label(bits: int, weight_precision: str | None = None) -> str:
+    """Map precision bits to a human-readable label.
+
+    If weight_precision is provided and describes a specific format (MXFP4, NVFP4, etc.),
+    prefer that over the generic bits-based label.
+    """
+    if weight_precision:
+        wp = weight_precision.lower()
+        if "mxfp4" in wp or "nvfp4" in wp:
+            return weight_precision  # preserve exact format name
     return {4: "INT4", 8: "FP8", 16: "FP16", 32: "FP32"}.get(bits, f"FP{bits}")
 
 
@@ -489,6 +498,8 @@ async def calculate_performance_forecast(state: PlannerState) -> dict:
 
     # For MoE models, compute ceiling uses active params (not total)
     arch = state.get("model_architecture") or {}
+    model_analysis = state.get("model_analysis") or {}
+    weight_precision_label = model_analysis.get("weight_precision") or mem_est.get("quantization_method")
     active_params = arch.get("parameter_count_active")
     if active_params and isinstance(active_params, (int, float)):
         active_params_b = active_params / 1e9 if active_params > 1e6 else active_params
@@ -519,7 +530,7 @@ async def calculate_performance_forecast(state: PlannerState) -> dict:
 
     # Single-request metrics
     tpot_single_ms = (1000.0 / mem_ceiling_tps) if mem_ceiling_tps > 0 else 999
-    ttft_input_tokens = 512
+    ttft_input_tokens = workload.get("avg_input_tokens") or 512
     prefill_flops = 2 * active_params_b * 1e9 * ttft_input_tokens
     ttft_ms = (prefill_flops / total_flops * 1000) if total_flops > 0 else 999
 
@@ -554,11 +565,12 @@ async def calculate_performance_forecast(state: PlannerState) -> dict:
         "estimated_tpot_ms": round(tpot_single_ms, 2),
         "estimated_ttft_ms": round(ttft_ms, 1),
         "ttft_assumed_input_tokens": ttft_input_tokens,
+        "avg_output_tokens": workload.get("avg_output_tokens") or 128,
         "max_batch_at_target_tpot": max_batch_at_target,
         "is_moe": is_moe,
         "chart_data": chart_data,
         "explanation": {
-            "model": f"{params_b:.1f}B{'(' + f'{active_params_b:.1f}B active)' if active_params_b != params_b else ''} params @ {_precision_label(precision_bits)}",
+            "model": f"{params_b:.1f}B{'(' + f'{active_params_b:.1f}B active)' if active_params_b != params_b else ''} params @ {_precision_label(precision_bits, weight_precision_label)}",
             "hardware": f"{gpu_count}× {gpu_type}",
             "bandwidth": f"{total_bandwidth_bytes / 1e12:.1f} TB/s total",
             "compute": f"{total_flops / 1e12:.0f} TFLOPS total",

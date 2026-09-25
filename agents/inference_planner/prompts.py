@@ -116,6 +116,8 @@ Based on the following deployment context, provide a concise inference architect
 - Use cases: {use_cases}
 - Target users: {target_users}
 - Max concurrent requests: {max_concurrent}
+- Average input tokens per request: {ttft_input_tokens}
+- Average output tokens per request: {avg_output_tokens}
 - TTFT target: {ttft_target_ms}ms
 - TPOT target: {tpot_target_ms}ms
 

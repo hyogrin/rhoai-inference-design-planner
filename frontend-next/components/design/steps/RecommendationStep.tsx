@@ -493,7 +493,7 @@ function MemoryCard({ data }: { data: Record<string, unknown> | undefined }) {
         )}
       </div>
       <div className="space-y-2 text-xs">
-        <Row label="Model Weights" value={`${data.model_weights_gb} GB (${precisionLabel(data.precision_bits as number)})`} />
+        <Row label="Model Weights" value={`${data.model_weights_gb} GB (${precisionLabel(data.precision_bits as number, data.quantization_method as string)})`} />
         <Row label="KV Cache" value={`${data.kv_cache_gb} GB`} />
         <Row label="Overhead" value={`${data.overhead_min_total_gb ?? data.overhead_gb ?? "~5–12"} GB`} />
         <div className="border-t border-dashed border-[var(--border)] pt-2">
@@ -689,7 +689,7 @@ function PerformanceForecastChart({ data }: { data: Record<string, unknown> }) {
           <div>
             <span className="font-medium text-[var(--foreground)]">Prefill (TTFT)</span> — Compute-bound
             <div className="mt-0.5 rounded bg-[var(--muted)]/50 px-2 py-1 font-mono text-[9px]">
-              TTFT = (2 × params × input_tokens) / total_FLOPS = {String(data.estimated_ttft_ms)}ms (@ 512 tokens)
+              TTFT = (2 × params × input_tokens) / total_FLOPS = {String(data.estimated_ttft_ms)}ms (@ {String(data.ttft_assumed_input_tokens || 512)} tokens)
             </div>
           </div>
         </div>
@@ -813,7 +813,7 @@ function buildExportPrompt({
   const model = modelSummary || {};
   const evidence = evidenceSummary || {};
 
-  const precLabel = precisionLabel(mem.precision_bits as number | undefined);
+  const precLabel = precisionLabel(mem.precision_bits as number | undefined, mem.quantization_method as string | undefined);
   const useCases = (dep.use_case_presets as string[] | undefined)?.join(", ") || "General inference";
 
   const evidenceLines: string[] = [];
@@ -858,13 +858,15 @@ Write in clear, professional English. Be direct and specific. Focus on architect
 - Use cases: ${useCases}
 - Target users: ${v(dep.target_end_users)}
 - Max concurrent requests: ${v(dep.max_concurrent_requests)}
+- Average input tokens: ${v(perf.ttft_assumed_input_tokens, "512")}
+- Average output tokens: ${v(perf.avg_output_tokens, "128")}
 - TTFT target: ${v(dep.ttft_target_ms)}ms
 - TPOT target: ${v(dep.tpot_target_ms)}ms
 
 ## Performance Forecast (Roofline)
 - Theoretical decode throughput: ${v(perf.theoretical_decode_tps)} tok/s (batch=1)
 - Estimated TPOT: ${v(perf.estimated_tpot_ms)}ms
-- Estimated TTFT: ${v(perf.estimated_ttft_ms)}ms
+- Estimated TTFT: ${v(perf.estimated_ttft_ms)}ms (@ ${v(perf.ttft_assumed_input_tokens, "512")} input tokens)
 - Ridge batch size: ${v(perf.ridge_batch_size)}
 - Max batch at target TPOT: ${v(perf.max_batch_at_target_tpot)}
 
@@ -964,7 +966,11 @@ IMPORTANT: If GPU memory utilization is below 50%, explicitly recommend:
 
 // --- Helpers ---
 
-function precisionLabel(bits: number | undefined): string {
+function precisionLabel(bits: number | undefined, quantMethod?: string): string {
+  if (quantMethod) {
+    const qm = quantMethod.toLowerCase();
+    if (qm.includes("mxfp4") || qm.includes("nvfp4")) return quantMethod;
+  }
   if (!bits) return "FP16";
   const map: Record<number, string> = { 4: "INT4", 8: "FP8", 16: "FP16", 32: "FP32" };
   return map[bits] ?? `${bits}-bit`;

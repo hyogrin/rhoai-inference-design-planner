@@ -63,7 +63,8 @@ def _fallback_analysis(arch: dict[str, Any]) -> dict[str, Any]:
     # Determine effective bits
     wp_lower = weight_precision.lower()
     qm_lower = quant_method.lower()
-    if any(t in wp_lower for t in ["float4", "fp4", "nvfp4", "nf4"]) or "4" in wp_lower:
+    if any(t in wp_lower for t in ["mxfp4", "nvfp4", "float4", "fp4", "nf4"]) or \
+       any(t in qm_lower for t in ["mxfp4", "nvfp4"]):
         effective_bits = 4
     elif any(t in wp_lower for t in ["float8", "fp8", "int8"]) or "8" in wp_lower:
         effective_bits = 8
@@ -85,7 +86,13 @@ def _fallback_analysis(arch: dict[str, Any]) -> dict[str, Any]:
     # KV bytes
     kv_cache_bytes = 1 if effective_bits <= 8 else 2
 
-    precision_label = weight_precision or (f"{'BF' if effective_bits == 16 else 'FP'}{effective_bits}")
+    # Preserve known format names in the label
+    if "mxfp4" in wp_lower:
+        precision_label = weight_precision or "MXFP4"
+    elif "nvfp4" in wp_lower:
+        precision_label = weight_precision or "NVFP4"
+    else:
+        precision_label = weight_precision or (f"{'BF' if effective_bits == 16 else 'FP'}{effective_bits}")
 
     return {
         "weight_precision": precision_label,
@@ -140,7 +147,7 @@ async def interpret_model_config(state: PlannerState) -> dict[str, Any]:
                         {"role": "user", "content": user_prompt},
                     ],
                     "temperature": 0.0,
-                    "max_tokens": 500,
+                    "max_tokens": 2000,
                     "response_format": {"type": "json_object"},
                 },
             )
@@ -148,7 +155,10 @@ async def interpret_model_config(state: PlannerState) -> dict[str, Any]:
             if not response.content:
                 raise ValueError(f"LLM returned empty response (HTTP {response.status_code})")
             data = response.json()
-            content = data["choices"][0]["message"]["content"]
+            msg = data["choices"][0]["message"]
+            content = msg.get("content") or msg.get("reasoning")
+            if not content:
+                raise ValueError("LLM returned message with no content or reasoning")
             parsed = json.loads(content)
 
             # Validate with Pydantic

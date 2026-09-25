@@ -34,6 +34,8 @@ export interface WorkloadConfig {
   use_case_allocations: Record<string, number>;
   target_end_users: number;
   max_concurrent_requests: number;
+  avg_input_tokens: number;
+  avg_output_tokens: number;
   ttft_ms: number;
   tpot_ms: number;
   rhoai_version: string;
@@ -56,6 +58,9 @@ export function WorkloadProfileStep({
   const [concurrency, setConcurrency] = useState(32);
   const [ttftMs, setTtftMs] = useState(500);
   const [tpotMs, setTpotMs] = useState(30);
+  const [showCustomTokens, setShowCustomTokens] = useState(false);
+  const [avgInputTokens, setAvgInputTokens] = useState(512);
+  const [avgOutputTokens, setAvgOutputTokens] = useState(128);
   const [rhoaiVersion, setRhoaiVersion] = useState("3.5");
   const { t } = useI18n();
 
@@ -113,6 +118,8 @@ export function WorkloadProfileStep({
       use_case_allocations: allocations,
       target_end_users: targetUsers,
       max_concurrent_requests: concurrency,
+      avg_input_tokens: avgInputTokens,
+      avg_output_tokens: avgOutputTokens,
       ttft_ms: ttftMs,
       tpot_ms: tpotMs,
       rhoai_version: selectedRhoai.version,
@@ -325,6 +332,54 @@ export function WorkloadProfileStep({
             </p>
           </div>
 
+          {/* Custom Token Lengths */}
+          <div className="sm:col-span-2">
+            <button
+              type="button"
+              onClick={() => setShowCustomTokens((v) => !v)}
+              className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-[var(--primary)] hover:underline"
+            >
+              <span className={cn("inline-block transition-transform", showCustomTokens && "rotate-90")}>▸</span>
+              {t("step4.customTokenLengths")}
+            </button>
+            {showCustomTokens && (
+              <div className="grid gap-4 sm:grid-cols-2 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 p-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium">
+                    {t("step4.avgInputTokens")}
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={2097152}
+                    value={avgInputTokens}
+                    onChange={(e) => setAvgInputTokens(Number(e.target.value) || 512)}
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm font-mono focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  />
+                  <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+                    {t("step4.avgInputTokensHelp")}
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium">
+                    {t("step4.avgOutputTokens")}
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={131072}
+                    value={avgOutputTokens}
+                    onChange={(e) => setAvgOutputTokens(Number(e.target.value) || 128)}
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm font-mono focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  />
+                  <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+                    {t("step4.avgOutputTokensHelp")}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* RHOAI Version */}
           <div className="sm:col-span-2">
             <label className="mb-1.5 block text-sm font-medium">
@@ -389,6 +444,12 @@ export function WorkloadProfileStep({
             <span className="text-[var(--muted-foreground)]">GPU:</span>{" "}
             <span className="font-medium">{gpuCount}× {gpu || "—"}</span>
           </div>
+          {(avgInputTokens !== 512 || avgOutputTokens !== 128) && (
+            <div>
+              <span className="text-[var(--muted-foreground)]">Tokens (in/out):</span>{" "}
+              <span className="font-medium">{avgInputTokens.toLocaleString()} / {avgOutputTokens.toLocaleString()}</span>
+            </div>
+          )}
         </div>
       </div>
 
