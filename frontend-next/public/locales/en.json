@@ -93,7 +93,7 @@
   "step5.performanceForecast": "Performance Forecast",
   "step5.designSuggestion": "Inference Design Suggestion",
   "step5.useCaseDistribution": "Use Case Distribution",
-  "step5.disclaimer": "Disclaimer: The numbers presented (memory estimates, performance forecasts, and cost projections) are theoretical approximations based on model metadata and hardware specifications. Actual performance may vary depending on workload patterns, software versions, and runtime conditions. Always validate with benchmarks before production deployment.",
+  "step5.disclaimer": "Disclaimer: The numbers presented (memory estimates, performance forecasts, and cost projections) are theoretical approximations based on model metadata and hardware specifications. Actual performance may vary depending on workload patterns, software versions, and runtime conditions. We recommend deploying with minimal resources first, measuring a baseline with real traffic, and then incrementally scaling resources to find the optimal balance between performance and cost.",
   "step5.nvl72CostNotice": "NVL72 rack-scale pricing is estimated from reference data and third-party sources. Actual costs require a direct quote from your cloud provider or hardware vendor, as NVL72 systems are typically sold through custom agreements.",
 
   "step1.nvl72Notice": "GB200/GB300 NVL72 is a rack-scale system (72 GPUs per rack). Cloud pricing is typically not publicly available and requires contacting your provider for a custom quote. Cost estimates shown are approximations based on reference data.",

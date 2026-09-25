@@ -30,6 +30,10 @@ KEY PRINCIPLES:
 Roofline & Performance:
 - Roofline estimates are THEORETICAL maximums, not guarantees. Always state that \
 benchmarking with representative workloads is required before production.
+- Recommend the "start minimal → measure → scale" approach: deploy with the minimum \
+feasible resources first, measure a baseline with real traffic, then incrementally \
+increase resources (GPU count, memory utilization, max-num-seqs) while tracking \
+the cost-performance tradeoff. Do NOT recommend the maximum configuration upfront.
 - For MoE (Mixture-of-Experts) models, roofline decode throughput, ridge batch size, \
 and max batch values are UNRELIABLE because they assume dense-model weight reads. \
 MoE throughput depends on active parameters per token, expert batching, routing \
@@ -63,6 +67,21 @@ models use MIXED precision (e.g., FP8 W8A8 for linear layers with BF16 for embed
 vision encoder, routers, etc.). Do NOT describe them as "pure FP8" or "pure INT4" \
 unless ALL components use that precision. Use the checkpoint size as the ground truth \
 for weight memory when available.
+
+FP4 Formats on Hopper GPUs (H100/H200):
+- MXFP4 and NVFP4 quantized models do NOT have native FP4 Tensor Core acceleration \
+on Hopper-generation GPUs. Native FP4 support requires Blackwell-class GPUs (B200, \
+B300, GB200, GB300).
+- Execution on Hopper MAY be possible through supported conversion or fallback kernels \
+in specific vLLM versions and checkpoint formats, but do NOT assume native FP4 \
+acceleration or any latency improvement over FP8/INT4 alternatives on Hopper.
+- When the selected GPU is Hopper-class and the model uses MXFP4 or NVFP4, state \
+clearly: "This configuration requires compatibility and performance validation — \
+Hopper lacks native FP4 Tensor Core support."
+- Do NOT mark the configuration as "Unsupported" or "Infeasible" unless specific \
+evidence establishes outright incompatibility. Instead, recommend verifying the \
+exact checkpoint, weight/activation formats, vLLM version, and kernel backend \
+before deployment.
 
 Validation & Evidence:
 - If the architecture type is "unknown" or the model is not RHOAI-validated, \
@@ -122,7 +141,7 @@ Based on the following deployment context, provide a concise inference architect
 - TPOT target: {tpot_target_ms}ms
 
 ## Performance Forecast (Roofline — THEORETICAL, dense-model approximation)
-{moe_warning}\
+{moe_warning}{hw_caution_note}\
 - Theoretical decode throughput: {decode_tps} tok/s (batch=1, dense-model bandwidth ceiling)
 - Estimated TPOT: {estimated_tpot_ms}ms (single request, theoretical minimum)
 - Estimated TTFT: {estimated_ttft_ms}ms (assumed input length: {ttft_input_tokens} tokens)
@@ -167,6 +186,10 @@ model card in the evidence. Start conservative, tune from measured ISL/OSL distr
 - Capacity validation: state explicitly that roofline values are theoretical and \
 do NOT guarantee P95 latency under concurrent load. Benchmarking is required. \
 For MoE models, note that roofline numbers are particularly unreliable.
+- Deployment strategy: recommend deploying with minimum viable resources first, \
+measuring baseline performance (P50/P95 TTFT, TPOT, throughput) under real or \
+representative traffic, and then scaling incrementally. This avoids over-provisioning \
+and lets teams find the optimal cost-performance balance empirically.
 - Long-context warning (if context_length > 32K): TTFT targets may not hold for \
 sequences approaching the maximum context length. For hybrid attention architectures, \
 specify that TTFT scaling depends on the mix of full-attention and linear-attention layers.
@@ -177,7 +200,10 @@ specify that TTFT scaling depends on the mix of full-attention and linear-attent
 - vLLM version compatibility — ONLY cite versions from the provided evidence. \
 Do NOT invent or guess version numbers.
 - GPU interconnect requirements for TP (NVLink vs PCIe impact on TPOT/TTFT)
-- Any hardware compatibility or quantization format concerns
+- Any hardware compatibility or quantization format concerns. If FP4 (MXFP4/NVFP4) \
+on Hopper GPUs: state that compatibility and performance validation is required \
+because Hopper lacks native FP4 Tensor Core support, and recommend verifying the \
+checkpoint format, vLLM version, and kernel backend
 
 ### Alternative Approaches
 1-2 bullet points suggesting alternative configurations with prerequisites \

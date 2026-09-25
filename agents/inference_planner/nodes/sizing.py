@@ -31,10 +31,20 @@ GPU_SPECS: dict[str, dict[str, Any]] = {
     "T4-16GB": {"memory_gb": 16, "bandwidth_tbps": 0.3, "flops_tflops": 65, "arch": "turing"},
 }
 
-# Quantization format → required GPU architectures
-QUANT_GPU_REQUIREMENTS: dict[str, set[str]] = {
-    "nvfp4": {"blackwell"},
-    "mxfp4": {"blackwell"},
+# Quantization format → GPU architecture compatibility tiers
+# - native_archs: full hardware acceleration (no warning)
+# - caution_archs: may work via conversion/fallback kernels but lacks native
+#   FP4 Tensor Core support → caution warning, NOT blocked
+# - all others: unsupported → blocked
+QUANT_GPU_COMPAT: dict[str, dict[str, set[str]]] = {
+    "nvfp4": {
+        "native": {"blackwell"},
+        "caution": {"hopper"},
+    },
+    "mxfp4": {
+        "native": {"blackwell"},
+        "caution": {"hopper"},
+    },
 }
 
 GPU_HOURLY_COST: dict[str, float] = {
@@ -203,19 +213,38 @@ async def calculate_memory_capacity(state: PlannerState) -> dict:
     hw_compat_warnings: list[str] = []
     hw_blocked = False
     blocked_reason = None
+    hw_caution = False
 
-    for quant_format, required_archs in QUANT_GPU_REQUIREMENTS.items():
+    for quant_format, compat_tiers in QUANT_GPU_COMPAT.items():
         if quant_format in repo_lower or quant_format in (arch.get("weight_precision") or "").lower():
-            if gpu_arch not in required_archs:
+            native_archs = compat_tiers.get("native", set())
+            caution_archs = compat_tiers.get("caution", set())
+
+            if gpu_arch in native_archs:
+                # Native FP4 acceleration — no warning needed
+                pass
+            elif gpu_arch in caution_archs:
+                # May work via fallback/conversion kernels but no native FP4 Tensor Cores
+                hw_caution = True
+                caution_msg = (
+                    f"Caution: {quant_format.upper()} on {gpu_arch.title()} GPUs ({gpu_type}) "
+                    f"requires compatibility and performance validation. "
+                    f"{gpu_arch.title()} lacks native FP4 Tensor Core support; "
+                    f"execution may be possible through conversion or fallback kernels, "
+                    f"but do not assume native FP4 acceleration or latency improvement. "
+                    f"Verify the exact checkpoint format, vLLM version, and kernel backend."
+                )
+                hw_compat_warnings.append(caution_msg)
+            else:
+                # Unsupported architecture — block
                 hw_blocked = True
                 blocked_reason = (
-                    f"{quant_format.upper()} quantization requires "
-                    f"{'/'.join(a.title() for a in required_archs)}-class GPUs. "
-                    f"{gpu_type} is {gpu_arch.title()} architecture and does not "
-                    f"provide native {quant_format.upper()} execution support."
+                    f"{quant_format.upper()} quantization is unsupported on "
+                    f"{gpu_arch.title()}-class GPUs ({gpu_type}). "
+                    f"Native execution requires {'/'.join(a.title() for a in native_archs)}-class GPUs."
                 )
                 hw_compat_warnings.append(blocked_reason)
-                break
+            break
 
     # Use model_analysis from LLM (user-confirmed) if available
     model_analysis = state.get("model_analysis") or {}
@@ -391,6 +420,7 @@ async def calculate_memory_capacity(state: PlannerState) -> dict:
         "fits": fits,
         "hw_blocked": hw_blocked,
         "hw_blocked_reason": blocked_reason,
+        "hw_caution": hw_caution,
         "precision_bits": precision_bits,
         "quantization_method": model_analysis.get("weight_precision") or None,
         "weight_source": "checkpoint" if checkpoint_size_bytes else "param_count",

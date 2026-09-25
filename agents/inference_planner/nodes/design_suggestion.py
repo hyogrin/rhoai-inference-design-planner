@@ -159,6 +159,14 @@ def _build_context(state: PlannerState) -> dict[str, str]:
     ttft_input_tokens = perf.get("ttft_assumed_input_tokens", 512)
     avg_output_tokens = perf.get("avg_output_tokens") or workload.get("avg_output_tokens") or 128
 
+    # Hardware caution note (FP4 on Hopper, etc.)
+    hw_caution_note = ""
+    if mem.get("hw_caution"):
+        mem_warnings = mem.get("warnings") or []
+        caution_lines = [w for w in mem_warnings if "caution" in w.lower() or "validation" in w.lower()]
+        if caution_lines:
+            hw_caution_note = "⚠ HARDWARE CAUTION: " + " ".join(caution_lines) + "\n"
+
     return {
         "model_repo_id": state.get("model_repo_id", "Unknown"),
         "architecture_type": arch_type,
@@ -202,6 +210,7 @@ def _build_context(state: PlannerState) -> dict[str, str]:
         "ttft_input_tokens": ttft_input_tokens,
         "avg_output_tokens": avg_output_tokens,
         "moe_warning": moe_warning,
+        "hw_caution_note": hw_caution_note,
         "cost_summary": cost.get("summary", "No cost data"),
         "evidence_summary": evidence_summary,
     }
@@ -442,6 +451,21 @@ def _build_fallback_suggestion(ctx: dict[str, str]) -> dict[str, Any]:
     if low_util_note:
         considerations += f"\n{low_util_note.rstrip()}"
 
+    # Hardware caution note (FP4 on Hopper, etc.)
+    hw_caution_note = ctx.get("hw_caution_note", "")
+    risk_factors = "- Actual performance is typically 50-70% of theoretical roofline\n"
+    risk_factors += "- KV cache pressure increases with concurrent requests\n"
+    risk_factors += (
+        "- Deploy with minimum viable resources first, measure baseline performance "
+        "with real traffic, and scale incrementally to find the optimal cost-performance balance"
+    )
+    if hw_caution_note:
+        risk_factors += (
+            "\n- **FP4 on Hopper caution**: This configuration requires compatibility "
+            "and performance validation — Hopper lacks native FP4 Tensor Core support. "
+            "Verify checkpoint format, vLLM version, and kernel backend before deployment."
+        )
+
     return {
         "content": (
             f"### Architecture Direction\n"
@@ -450,8 +474,7 @@ def _build_fallback_suggestion(ctx: dict[str, str]) -> dict[str, Any]:
             f"### Key Considerations\n"
             f"{considerations}\n\n"
             f"### Risk Factors\n"
-            f"- Actual performance is typically 50-70% of theoretical roofline\n"
-            f"- KV cache pressure increases with concurrent requests\n\n"
+            f"{risk_factors}\n\n"
             f"### Alternative Approaches\n"
             f"{alt}"
         ),

@@ -24,6 +24,13 @@ async def verify_recommendation(state: PlannerState) -> dict:
         reason = mem.get("hw_blocked_reason", "Hardware incompatibility detected")
         warnings.append(reason)
 
+    # Check hardware caution (FP4 on Hopper — not blocked but needs verification)
+    elif mem.get("hw_caution"):
+        mem_warnings = mem.get("warnings") or []
+        for w in mem_warnings:
+            if "caution" in w.lower() or "validation" in w.lower():
+                warnings.append(w)
+
     # Check memory fit (only meaningful if not hw_blocked)
     elif mem.get("fits") is False:
         total_req = mem.get("total_required_min_gb") or mem.get("total_required_gb", "?")
