@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     hf_token: str = ""
 
-    mcp_web_search_url: str = "http://127.0.0.1:9003"
+    mcp_web_search_url: str = ""
     searxng_url: str = ""
     verify_ssl: bool = True
 

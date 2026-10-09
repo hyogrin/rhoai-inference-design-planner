@@ -1,4 +1,4 @@
-.PHONY: help install dev lint format test test-cov type-check generate-types backend-start frontend-start docker-build docker-up docker-down clean db-migrate smoke-test generate-golden run-eval mlflow
+.PHONY: help install dev lint format test test-cov type-check generate-types backend-start frontend-start docker-build docker-up docker-down clean db-migrate smoke-test generate-golden run-eval mlflow deploy deploy-backend deploy-frontend
 
 PYTHON := python3
 UV := uv
@@ -72,3 +72,13 @@ clean: ## Clean generated files
 	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -name "*.pyc" -delete 2>/dev/null || true
 	rm -rf .ruff_cache .mypy_cache htmlcov .coverage
+
+# ── Cluster deployment ───────────────────────────────────────────
+deploy: ## Build, push, and deploy ALL to OpenShift cluster
+	./scripts/deploy.sh all
+
+deploy-backend: ## Build, push, and deploy backend only
+	./scripts/deploy.sh backend
+
+deploy-frontend: ## Build, push, and deploy frontend only
+	./scripts/deploy.sh frontend

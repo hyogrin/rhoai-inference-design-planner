@@ -1,9 +1,13 @@
 """Community evidence search connector.
 
-Uses web search (SearXNG + DuckDuckGo fallback) to discover community evidence
-about model deployments, compatibility issues, and operational characteristics.
+Uses web search (direct SearXNG → MCP fallback → DuckDuckGo fallback) to
+discover community evidence about model deployments, compatibility issues,
+and operational characteristics.
 
-Can call the web-search MCP server via HTTP, or fall back to direct DuckDuckGo.
+Priority:
+  1. Direct SearXNG HTTP call (if SEARXNG_URL is configured — no extra server)
+  2. MCP web-search server (if MCP_WEB_SEARCH_URL is configured)
+  3. DuckDuckGo HTML scraping (always available, no server required)
 """
 
 from __future__ import annotations
@@ -22,7 +26,10 @@ from domain.evidence import EvidenceItem
 
 logger = logging.getLogger(__name__)
 
-MCP_WEB_SEARCH_URL = os.getenv("MCP_WEB_SEARCH_URL", "http://127.0.0.1:9003")
+MCP_WEB_SEARCH_URL = os.getenv("MCP_WEB_SEARCH_URL", "")
+SEARXNG_URL = os.getenv("SEARXNG_URL", "")
+VERIFY_SSL = os.getenv("VERIFY_SSL", "true").lower() not in ("false", "0", "no")
+SEARXNG_ENGINES = os.getenv("SEARXNG_ENGINES", "duckduckgo,brave,wikipedia,arxiv")
 
 PREFERRED_DOMAINS = [
     "huggingface.co",
@@ -66,6 +73,7 @@ _OFFICIAL_SECONDARY_DOMAINS = {
 }
 
 _MAX_TOTAL_RESULTS = 25
+_SEARXNG_TIMEOUT_SECONDS = 15
 _MCP_TIMEOUT_SECONDS = 10
 _DDG_TIMEOUT_SECONDS = 10
 
@@ -73,8 +81,13 @@ _DDG_TIMEOUT_SECONDS = 10
 class CommunitySearchConnector:
     """Discovers community evidence about models via web search."""
 
-    def __init__(self, mcp_url: str | None = None):
+    def __init__(
+        self,
+        mcp_url: str | None = None,
+        searxng_url: str | None = None,
+    ):
         self._mcp_url = mcp_url or MCP_WEB_SEARCH_URL
+        self._searxng_url = searxng_url or SEARXNG_URL
 
     async def search_model_evidence(
         self,
@@ -133,13 +146,65 @@ class CommunitySearchConnector:
         return evidence[:_MAX_TOTAL_RESULTS]
 
     async def _web_search(self, query: str, num_results: int = 5) -> list[dict[str, Any]]:
-        """Execute web search via MCP server or direct DuckDuckGo fallback."""
-        results = await self._call_mcp_web_search(query, num_results)
-        if results:
-            return results
+        """Execute web search: direct SearXNG → MCP server → DuckDuckGo fallback."""
+        # 1. Direct SearXNG (no extra server needed)
+        if self._searxng_url:
+            results = await self._direct_searxng(query, num_results)
+            if results:
+                return results
 
-        logger.info("MCP web-search unavailable, falling back to direct DuckDuckGo")
+        # 2. MCP web-search server (if configured)
+        if self._mcp_url:
+            results = await self._call_mcp_web_search(query, num_results)
+            if results:
+                return results
+
+        # 3. DuckDuckGo HTML fallback (always available)
+        logger.info("Falling back to direct DuckDuckGo search")
         return await self._direct_duckduckgo(query, num_results)
+
+    async def _direct_searxng(
+        self, query: str, num_results: int
+    ) -> list[dict[str, Any]]:
+        """Call SearXNG search API directly via HTTP GET.
+
+        SearXNG exposes a simple ``/search?q=...&format=json`` REST endpoint,
+        so no MCP server middleman is needed.
+        """
+        try:
+            async with httpx.AsyncClient(
+                timeout=_SEARXNG_TIMEOUT_SECONDS,
+                verify=VERIFY_SSL,
+            ) as client:
+                resp = await client.get(
+                    f"{self._searxng_url.rstrip('/')}/search",
+                    params={
+                        "q": query,
+                        "format": "json",
+                        "engines": SEARXNG_ENGINES,
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                results = [
+                    {
+                        "title": r.get("title", ""),
+                        "url": r.get("url", ""),
+                        "content": r.get("content", ""),
+                    }
+                    for r in data.get("results", [])[:num_results]
+                ]
+                if not results:
+                    unresponsive = data.get("unresponsive_engines", [])
+                    if unresponsive:
+                        logger.warning(
+                            "SearXNG returned 0 results — unresponsive engines: %s",
+                            unresponsive,
+                        )
+                return results
+        except (httpx.HTTPError, KeyError, TypeError) as exc:
+            logger.warning("Direct SearXNG search failed: %s", exc)
+            return []
 
     async def _call_mcp_web_search(
         self, query: str, num_results: int

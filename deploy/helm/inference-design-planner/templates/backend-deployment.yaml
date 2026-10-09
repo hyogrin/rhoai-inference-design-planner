@@ -45,6 +45,39 @@ spec:
               port: {{ .Values.backend.port }}
             initialDelaySeconds: 30
             periodSeconds: 30
+        {{- if .Values.searxng.enabled }}
+        - name: searxng
+          image: {{ .Values.searxng.image }}
+          ports:
+            - containerPort: {{ .Values.searxng.port }}
+          env:
+            - name: SEARXNG_BASE_URL
+              value: "http://localhost:{{ .Values.searxng.port }}"
+          volumeMounts:
+            - name: searxng-settings
+              mountPath: /etc/searxng/settings.yml
+              subPath: settings.yml
+          resources:
+            {{- toYaml .Values.searxng.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.searxng.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.searxng.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+        {{- end }}
+      volumes:
+        {{- if .Values.searxng.enabled }}
+        - name: searxng-settings
+          configMap:
+            name: searxng-settings
+        {{- end }}
 ---
 apiVersion: v1
 kind: Service

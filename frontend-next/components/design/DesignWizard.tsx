@@ -19,7 +19,7 @@ const STEPS = [
   { id: 5, name: "Recommendation" },
 ] as const;
 
-export function DesignWizard() {
+export function DesignWizard({ dbAvailable = false }: { dbAvailable?: boolean }) {
   const { language, t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
   const [modelRepoId, setModelRepoId] = useState("");
@@ -158,7 +158,7 @@ export function DesignWizard() {
             platform={platform}
           />
         )}
-        {currentStep === 5 && <RecommendationStep agentState={agentState} />}
+        {currentStep === 5 && <RecommendationStep agentState={agentState} dbAvailable={dbAvailable} />}
       </div>
 
       {/* Navigation */}

@@ -47,6 +47,28 @@ make run-backend   # Start backend
 make run-frontend  # Start frontend
 ```
 
+## Cluster Deployment
+
+**Always use `scripts/deploy.sh` (or `make deploy`) for cluster deployments.**
+The script automatically resolves the backend route from OpenShift and passes
+`NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_AGENT_URL` as Docker build-args — these
+are required because Next.js inlines them at build time.
+
+```bash
+make deploy            # Build, push, deploy ALL (backend + frontend)
+make deploy-backend    # Backend only
+make deploy-frontend   # Frontend only
+
+# Or directly:
+./scripts/deploy.sh all
+./scripts/deploy.sh backend
+./scripts/deploy.sh frontend
+```
+
+⚠️ **Never** run `docker build` for frontend without `--build-arg NEXT_PUBLIC_API_URL=...`
+and `--build-arg NEXT_PUBLIC_AGENT_URL=...` — it will silently fall back to `localhost`
+and cause "Failed to fetch" on the cluster.
+
 ## Conventions
 
 - All domain types defined in Python first, TypeScript generated

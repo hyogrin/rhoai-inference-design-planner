@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DesignWizard } from "@/components/design/DesignWizard";
 import { useI18n, type Language } from "@/lib/i18n";
+import { useDbStatus } from "@/lib/use-db-status";
 import { Globe } from "lucide-react";
 
 const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
@@ -14,6 +15,7 @@ const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
 
 export default function Home() {
   const { language, setLanguage, t } = useI18n();
+  const dbAvailable = useDbStatus();
 
   return (
     <main className="min-h-screen">
@@ -26,12 +28,14 @@ export default function Home() {
             </span>
           </div>
           <nav className="flex items-center gap-4">
-            <Link
-              href="/recommendations"
-              className="text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
-            >
-              {t("header.savedRecommendations")}
-            </Link>
+            {dbAvailable && (
+              <Link
+                href="/recommendations"
+                className="text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              >
+                {t("header.savedRecommendations")}
+              </Link>
+            )}
             <div className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-2 py-1.5">
               <Globe className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
               <select
@@ -52,7 +56,7 @@ export default function Home() {
           {t("header.subtitle")}
         </p>
       </header>
-      <DesignWizard />
+      <DesignWizard dbAvailable={dbAvailable === true} />
     </main>
   );
 }

@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from backend.config import get_settings
+from backend.database import get_db
 from backend.dependencies import DesignRepoDep
 from backend.metrics import metrics_endpoint
 from backend.repositories.design_session import OptimisticLockError
@@ -177,8 +178,17 @@ def _register_exception_handlers(app: FastAPI) -> None:
 
 def _register_routes(app: FastAPI) -> None:
     @app.get("/api/v1/health")
-    async def health_check() -> dict[str, str]:
-        return {"status": "ok", "version": "0.1.0"}
+    async def health_check() -> dict:
+        db_ok = False
+        try:
+            from sqlalchemy import text
+
+            async for session in get_db():
+                await session.execute(text("SELECT 1"))
+                db_ok = True
+        except Exception:
+            pass
+        return {"status": "ok", "version": "0.1.0", "db_available": db_ok}
 
     @app.get("/metrics")
     async def metrics(request: Request):

@@ -1,5 +1,5 @@
 namespace: inference-planner
-domain: apps.openshift-cluster.sandbox3031.opentlc.com
+domain: apps.ocp.jj6tj.sandbox5333.opentlc.com
 
 backend:
   replicas: 1
@@ -40,10 +40,22 @@ postgresql:
       cpu: 500m
       memory: 512Mi
 
+searxng:
+  enabled: true
+  image: searxng/searxng:latest
+  port: 8080
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
 config:
   APP_ENV: production
   APP_LOG_LEVEL: INFO
-  APP_CORS_ORIGINS: "https://inference-planner.apps.openshift-cluster.sandbox3031.opentlc.com"
+  APP_CORS_ORIGINS: "https://inference-planner.apps.ocp.jj6tj.sandbox5333.opentlc.com"
   LLM_MODEL_NAME: glm-53-flash
   VERIFY_SSL: "false"
   MLFLOW_TRACKING_URI: "https://rh-ai.apps.openshift-cluster.sandbox3031.opentlc.com/mlflow"
@@ -51,7 +63,7 @@ config:
   MLFLOW_WORKSPACE: inference-planner
   MLFLOW_EXPERIMENT_NAME: inference-design-planner
   PROMETHEUS_ENABLED: "true"
-  SEARXNG_URL: "https://mcp-searxng-mcp-servers.apps.openshift-cluster.sandbox3031.opentlc.com"
+  SEARXNG_URL: "http://localhost:8080"
 
 secret:
   OPENAI_API_KEY: sk-oai-1ThWxHclnScNcNXFc_71Z5mqjBeRTdqvIfqu83zvjgpJVRHjQdhCwajjw8tSR

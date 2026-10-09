@@ -13,8 +13,10 @@ import {
   Cpu,
   Copy,
   Check,
+  DatabaseZap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDbStatus } from "@/lib/use-db-status";
 
 interface RecommendationItem {
   session_id: string;
@@ -32,6 +34,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7001";
 
 export default function RecommendationsPage() {
   const router = useRouter();
+  const dbAvailable = useDbStatus();
   const [items, setItems] = useState<RecommendationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -39,8 +42,12 @@ export default function RecommendationsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchRecommendations();
-  }, []);
+    if (dbAvailable === true) {
+      fetchRecommendations();
+    } else if (dbAvailable === false) {
+      setLoading(false);
+    }
+  }, [dbAvailable]);
 
   async function fetchRecommendations() {
     setLoading(true);
@@ -168,6 +175,24 @@ export default function RecommendationsPage() {
         {error && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-600">
             {error}
+          </div>
+        )}
+
+        {/* DB Not Available */}
+        {!loading && dbAvailable === false && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <DatabaseZap className="mb-4 h-12 w-12 text-[var(--muted-foreground)]/50" />
+            <h3 className="text-lg font-medium">Database not connected</h3>
+            <p className="mt-1 max-w-md text-sm text-[var(--muted-foreground)]">
+              The database is not configured or unavailable. Saved recommendations require a PostgreSQL connection.
+              The agent analysis still works without a database.
+            </p>
+            <Link
+              href="/"
+              className="mt-4 rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:opacity-90"
+            >
+              Back to Design
+            </Link>
           </div>
         )}
 

@@ -25,9 +25,10 @@ import type { AgentState } from "@/lib/use-agent-stream";
 
 interface RecommendationStepProps {
   agentState: AgentState;
+  dbAvailable?: boolean;
 }
 
-export function RecommendationStep({ agentState }: RecommendationStepProps) {
+export function RecommendationStep({ agentState, dbAvailable = false }: RecommendationStepProps) {
   const { t } = useI18n();
   const router = useRouter();
   const isRunning = agentState.status === "running";
@@ -84,12 +85,12 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
     }
   }, [viewModel, saving, saved, verification]);
 
-  // Auto-save when recommendation is complete
+  // Auto-save when recommendation is complete (only if DB is available)
   useEffect(() => {
-    if (viewModel && !isRunning && !saving && !saved) {
+    if (dbAvailable && viewModel && !isRunning && !saving && !saved) {
       handleSave();
     }
-  }, [viewModel, isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [viewModel, isRunning, dbAvailable]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isRunning || !viewModel) {
     return (
@@ -122,30 +123,34 @@ export function RecommendationStep({ agentState }: RecommendationStepProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Auto-save status indicator */}
-          <span className={cn(
-            "flex items-center gap-1.5 text-xs font-medium",
-            saved ? "text-green-600" : saving ? "text-[var(--muted-foreground)]" : ""
-          )}>
-            {saved ? (
-              <>
-                <Check className="h-3.5 w-3.5" />
-                {t("step5.autoSaved")}
-              </>
-            ) : saving ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                {t("step5.saving")}
-              </>
-            ) : null}
-          </span>
-          <button
-            onClick={() => router.push("/recommendations")}
-            className="flex items-center gap-2 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/5 px-4 py-2.5 text-sm font-medium text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-all"
-          >
-            <List className="h-4 w-4" />
-            {t("step5.viewAll")}
-          </button>
+          {/* Auto-save status indicator (only when DB is available) */}
+          {dbAvailable && (
+            <span className={cn(
+              "flex items-center gap-1.5 text-xs font-medium",
+              saved ? "text-green-600" : saving ? "text-[var(--muted-foreground)]" : ""
+            )}>
+              {saved ? (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  {t("step5.autoSaved")}
+                </>
+              ) : saving ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {t("step5.saving")}
+                </>
+              ) : null}
+            </span>
+          )}
+          {dbAvailable && (
+            <button
+              onClick={() => router.push("/recommendations")}
+              className="flex items-center gap-2 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/5 px-4 py-2.5 text-sm font-medium text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-all"
+            >
+              <List className="h-4 w-4" />
+              {t("step5.viewAll")}
+            </button>
+          )}
           <button
             onClick={handleExport}
             className={cn(
