@@ -56,6 +56,18 @@ def _make_llm(model_name: str, base_url: str, api_key: str, verify_ssl: bool,
     return ChatOpenAI(**kwargs)
 
 
+def _extract_tokens(response: Any) -> dict[str, int]:
+    """Extract token usage from a LangChain AIMessage response."""
+    usage = getattr(response, "usage_metadata", None)
+    if usage:
+        return {
+            "input_tokens": usage.get("input_tokens", 0),
+            "output_tokens": usage.get("output_tokens", 0),
+            "total_tokens": usage.get("total_tokens", 0),
+        }
+    return {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+
+
 def _precision_label(bits: int, weight_precision: str | None = None) -> str:
     if weight_precision:
         wp = weight_precision.lower()
@@ -306,16 +318,31 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
         if lang_instruction:
             planning_prompt += lang_instruction
 
+        plan_span_cm: Any = contextlib.nullcontext()
+        if _should_trace:
+            try:
+                plan_span_cm = mlflow.start_span(name="design_planning")
+            except Exception:
+                plan_span_cm = contextlib.nullcontext()
+
         t1 = time.monotonic()
         planning_llm = _make_llm(model_name, base_url, api_key, verify_ssl,
                                  max_tokens=1024, timeout=60)
-        plan_response = await planning_llm.ainvoke([
-            SystemMessage(content=DESIGN_PLANNING_SYSTEM + lang_instruction),
-            HumanMessage(content=planning_prompt),
-        ])
-        draft_plan = plan_response.content.strip()
-        plan_latency = (time.monotonic() - t1) * 1000
-        logger.info("Planning step completed (%d chars, %.0fms)", len(draft_plan), plan_latency)
+        with plan_span_cm as plan_span:
+            plan_response = await planning_llm.ainvoke([
+                SystemMessage(content=DESIGN_PLANNING_SYSTEM + lang_instruction),
+                HumanMessage(content=planning_prompt),
+            ])
+            draft_plan = plan_response.content.strip()
+            plan_latency = (time.monotonic() - t1) * 1000
+            plan_tokens = _extract_tokens(plan_response)
+            logger.info("Planning step completed (%d chars, %.0fms, %s)", len(draft_plan), plan_latency, plan_tokens)
+            if plan_span is not None:
+                try:
+                    plan_span.set_inputs({"system": DESIGN_PLANNING_SYSTEM[:200], "user": planning_prompt[:300]})
+                    plan_span.set_outputs({"plan": draft_plan[:500], "latency_ms": round(plan_latency), **plan_tokens})
+                except Exception:
+                    pass
 
         # ── Step 2: Validation + Final Suggestion ──
         validation_ctx = {k: str(v) for k, v in ctx.items()}
@@ -324,20 +351,36 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
         if lang_instruction:
             validation_prompt += lang_instruction
 
+        val_span_cm: Any = contextlib.nullcontext()
+        if _should_trace:
+            try:
+                val_span_cm = mlflow.start_span(name="design_validation")
+            except Exception:
+                val_span_cm = contextlib.nullcontext()
+
         t2 = time.monotonic()
         validation_llm = _make_llm(model_name, base_url, api_key, verify_ssl,
                                    max_tokens=4096, timeout=60)
-        val_response = await validation_llm.ainvoke([
-            SystemMessage(content=DESIGN_VALIDATION_SYSTEM + lang_instruction),
-            HumanMessage(content=validation_prompt),
-        ])
-        suggestion_text = val_response.content.strip()
-        if not suggestion_text:
-            raise ValueError("LLM returned empty response")
-        val_latency = (time.monotonic() - t2) * 1000
-        logger.info("Validation step completed (%d chars, %.0fms)", len(suggestion_text), val_latency)
+        with val_span_cm as val_span:
+            val_response = await validation_llm.ainvoke([
+                SystemMessage(content=DESIGN_VALIDATION_SYSTEM + lang_instruction),
+                HumanMessage(content=validation_prompt),
+            ])
+            suggestion_text = val_response.content.strip()
+            if not suggestion_text:
+                raise ValueError("LLM returned empty response")
+            val_latency = (time.monotonic() - t2) * 1000
+            val_tokens = _extract_tokens(val_response)
+            logger.info("Validation step completed (%d chars, %.0fms, %s)", len(suggestion_text), val_latency, val_tokens)
+            if val_span is not None:
+                try:
+                    val_span.set_inputs({"system": DESIGN_VALIDATION_SYSTEM[:200], "user": validation_prompt[:300]})
+                    val_span.set_outputs({"suggestion": suggestion_text[:500], "latency_ms": round(val_latency), **val_tokens})
+                except Exception:
+                    pass
 
         total_latency_ms = (time.monotonic() - t0) * 1000
+        all_tokens = {k: plan_tokens.get(k, 0) + val_tokens.get(k, 0) for k in ("input_tokens", "output_tokens", "total_tokens")}
 
         # Set root span outputs
         if root_span is not None:
@@ -347,6 +390,7 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                     "planning_ms": round(plan_latency),
                     "validation_ms": round(val_latency),
                     "total_ms": round(total_latency_ms),
+                    **all_tokens,
                 })
             except Exception:
                 pass
