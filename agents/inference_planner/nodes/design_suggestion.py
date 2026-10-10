@@ -249,74 +249,88 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
             "phase_history": ["design_suggestion_fallback"],
         }
 
-    span = None
-    if _mlflow_available:
+    # MLflow tracing: use context manager (required for MLflow 3.x)
+    import contextlib
+
+    _should_trace = _mlflow_available
+    if _should_trace:
         from backend.tracing import is_tracing_enabled
 
-        if is_tracing_enabled():
-            try:
-                span = mlflow.start_span(name="design_suggestion")
-                span.set_inputs({
-                    "model_repo_id": ctx.get("model_repo_id"),
-                    "gpu_type": ctx.get("gpu_type"),
-                    "precision_label": ctx.get("precision_label"),
-                    "model_used": model_name,
-                    "temperature": 0.3,
-                    "max_tokens": 1500,
-                })
-                span.set_attributes({
-                    "session_id": session_id,
-                    "platform": ctx.get("platform", ""),
-                    "utilization_pct": str(ctx.get("utilization_pct", "")),
-                })
-            except Exception:
-                logger.debug("MLflow span creation skipped", exc_info=True)
+        _should_trace = is_tracing_enabled()
+
+    trace_cm: Any = contextlib.nullcontext()
+    if _should_trace:
+        try:
+            trace_cm = mlflow.start_span(name="design_suggestion")
+        except Exception:
+            logger.debug("MLflow span creation skipped", exc_info=True)
+            trace_cm = contextlib.nullcontext()
 
     t0 = time.monotonic()
     try:
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(60.0), verify=verify_ssl
-        ) as client:
-            resp = await client.post(
-                f"{base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {api_key}"},
-                json={
-                    "model": model_name,
-                    "messages": [
-                        {"role": "system", "content": DESIGN_SUGGESTION_SYSTEM + lang_instruction},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    "max_tokens": 4096,
-                    "temperature": 0.3,
-                },
-            )
-            resp.raise_for_status()
-            if not resp.content:
-                raise ValueError(f"LLM returned empty response (HTTP {resp.status_code})")
-            data = resp.json()
-            msg = data["choices"][0]["message"]
-            suggestion_text = (msg.get("content") or msg.get("reasoning") or "").strip()
-            if not suggestion_text:
-                raise ValueError("LLM returned message with no content or reasoning")
+        with trace_cm as span:
+            if span is not None:
+                try:
+                    span.set_inputs({
+                        "model_repo_id": ctx.get("model_repo_id"),
+                        "gpu_type": ctx.get("gpu_type"),
+                        "precision_label": ctx.get("precision_label"),
+                        "model_used": model_name,
+                        "temperature": 0.3,
+                        "max_tokens": 1500,
+                    })
+                    span.set_attributes({
+                        "session_id": session_id,
+                        "platform": ctx.get("platform", ""),
+                        "utilization_pct": str(ctx.get("utilization_pct", "")),
+                    })
+                except Exception:
+                    pass
 
-        latency_ms = (time.monotonic() - t0) * 1000
-        logger.info("Design suggestion generated (%d chars, %.0fms)", len(suggestion_text), latency_ms)
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(60.0), verify=verify_ssl
+            ) as client:
+                resp = await client.post(
+                    f"{base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={
+                        "model": model_name,
+                        "messages": [
+                            {"role": "system", "content": DESIGN_SUGGESTION_SYSTEM + lang_instruction},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        "max_tokens": 4096,
+                        "temperature": 0.3,
+                    },
+                )
+                resp.raise_for_status()
+                if not resp.content:
+                    raise ValueError(f"LLM returned empty response (HTTP {resp.status_code})")
+                data = resp.json()
+                msg = data["choices"][0]["message"]
+                suggestion_text = (msg.get("content") or msg.get("reasoning") or "").strip()
+                if not suggestion_text:
+                    raise ValueError("LLM returned message with no content or reasoning")
 
-        if span:
-            try:
-                span.set_outputs({"suggestion_length": len(suggestion_text), "source": "llm"})
-                span.end()
-            except Exception:
-                pass
+            latency_ms = (time.monotonic() - t0) * 1000
+            logger.info("Design suggestion generated (%d chars, %.0fms)", len(suggestion_text), latency_ms)
 
-        trace_id = ""
-        if _mlflow_available and is_tracing_enabled():
-            try:
-                active = mlflow.get_current_active_span()
-                if active:
-                    trace_id = active.request_id
-            except Exception:
-                pass
+            if span is not None:
+                try:
+                    span.set_outputs({"suggestion_length": len(suggestion_text), "source": "llm"})
+                except Exception:
+                    pass
+
+            trace_id = ""
+            if _should_trace:
+                try:
+                    active = mlflow.get_current_active_span()
+                    if active:
+                        trace_id = active.request_id
+                except Exception:
+                    pass
+
+        # span is automatically closed by context manager
 
         try:
             record = build_trace_record(
@@ -353,13 +367,7 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
             exc,
             exc_info=True,
         )
-
-        if span:
-            try:
-                span.set_status("ERROR")
-                span.end()
-            except Exception:
-                pass
+        # span already closed by context manager __exit__
 
         fallback = _build_fallback_suggestion(ctx)
 
