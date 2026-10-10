@@ -320,7 +320,7 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                     "model_used": model_name,
                     "session_id": session_id,
                 })
-                root_span.set_attribute("mlflow.session.id", session_id)
+                mlflow.update_current_trace(session_id=session_id)
             except Exception:
                 pass
 

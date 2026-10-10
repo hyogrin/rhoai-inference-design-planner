@@ -143,18 +143,6 @@ async def interpret_model_config(state: PlannerState) -> dict[str, Any]:
         except ImportError:
             pass
 
-        if _mlflow_available:
-            try:
-                from backend.tracing import is_tracing_enabled
-                if is_tracing_enabled():
-                    session_id = state.get("session_id", "")
-                    if session_id:
-                        span = mlflow.get_current_active_span()
-                        if span:
-                            span.set_attribute("mlflow.session.id", session_id)
-            except Exception:
-                pass
-
         llm_kwargs: dict[str, Any] = dict(
             model=model_name,
             base_url=base_url,
@@ -168,10 +156,27 @@ async def interpret_model_config(state: PlannerState) -> dict[str, Any]:
             llm_kwargs["http_async_client"] = httpx.AsyncClient(verify=False)
 
         llm = ChatOpenAI(**llm_kwargs)
-        response = await llm.ainvoke([
-            SystemMessage(content=MODEL_ANALYSIS_SYSTEM),
-            HumanMessage(content=user_prompt),
-        ])
+
+        session_id = state.get("session_id", "")
+        _use_tracing_ctx = _mlflow_available and session_id
+        if _use_tracing_ctx:
+            try:
+                from backend.tracing import is_tracing_enabled
+                _use_tracing_ctx = is_tracing_enabled()
+            except Exception:
+                _use_tracing_ctx = False
+
+        if _use_tracing_ctx:
+            with mlflow.tracing.context(session_id=session_id):
+                response = await llm.ainvoke([
+                    SystemMessage(content=MODEL_ANALYSIS_SYSTEM),
+                    HumanMessage(content=user_prompt),
+                ])
+        else:
+            response = await llm.ainvoke([
+                SystemMessage(content=MODEL_ANALYSIS_SYSTEM),
+                HumanMessage(content=user_prompt),
+            ])
         content = response.content
         if not content:
             raise ValueError("LLM returned empty response")
