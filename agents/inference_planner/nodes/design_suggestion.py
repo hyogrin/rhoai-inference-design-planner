@@ -265,15 +265,40 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
         if lang_instruction:
             planning_prompt += lang_instruction
 
-        plan_span_cm: Any = contextlib.nullcontext()
+        # Parent trace wraps both LLM calls so they appear as child spans in one row
+        trace_cm: Any = contextlib.nullcontext()
         if _should_trace:
             try:
-                plan_span_cm = mlflow.start_span(name="design_planning")
+                trace_cm = mlflow.start_trace(name="design_suggestion")
             except Exception:
-                plan_span_cm = contextlib.nullcontext()
+                trace_cm = contextlib.nullcontext()
+
+        trace_id = ""
 
         t1 = time.monotonic()
         async with httpx.AsyncClient(timeout=httpx.Timeout(60.0), verify=verify_ssl) as client:
+          with trace_cm as root_span:
+            if root_span is not None:
+                try:
+                    trace_id = root_span.request_id
+                    root_span.set_inputs({
+                        "model_repo_id": ctx.get("model_repo_id"),
+                        "gpu_type": ctx.get("gpu_type"),
+                        "precision_label": ctx.get("precision_label"),
+                        "model_used": model_name,
+                        "session_id": session_id,
+                    })
+                except Exception:
+                    pass
+
+            # ── Child Span 1: Planning ──
+            plan_span_cm: Any = contextlib.nullcontext()
+            if _should_trace and root_span is not None:
+                try:
+                    plan_span_cm = mlflow.start_span(name="design_planning")
+                except Exception:
+                    plan_span_cm = contextlib.nullcontext()
+
             with plan_span_cm as plan_span:
                 if plan_span is not None:
                     try:
@@ -312,13 +337,14 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                 if plan_span is not None:
                     try:
                         plan_span.set_outputs({
+                            "draft_plan": draft_plan[:500],
                             "plan_length": len(draft_plan),
                             "latency_ms": round(plan_latency),
                         })
                     except Exception:
                         pass
 
-            # ── Step 2: Validation + Final Suggestion ──
+            # ── Child Span 2: Validation + Final Suggestion ──
             validation_ctx = {k: str(v) for k, v in ctx.items()}
             validation_ctx["draft_plan"] = draft_plan
             validation_prompt = DESIGN_VALIDATION_USER.format(**validation_ctx)
@@ -326,7 +352,7 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                 validation_prompt += lang_instruction
 
             val_span_cm: Any = contextlib.nullcontext()
-            if _should_trace:
+            if _should_trace and root_span is not None:
                 try:
                     val_span_cm = mlflow.start_span(name="design_validation")
                 except Exception:
@@ -380,17 +406,21 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                     except Exception:
                         pass
 
+            # Set root span outputs
+            total_latency_ms = (time.monotonic() - t0) * 1000
+            if root_span is not None:
+                try:
+                    root_span.set_outputs({
+                        "suggestion_length": len(suggestion_text),
+                        "planning_ms": round(plan_latency),
+                        "validation_ms": round(val_latency),
+                        "total_ms": round(total_latency_ms),
+                    })
+                except Exception:
+                    pass
+
         total_latency_ms = (time.monotonic() - t0) * 1000
         logger.info("Design suggestion total (plan+validate): %.0fms", total_latency_ms)
-
-        trace_id = ""
-        if _should_trace:
-            try:
-                active = mlflow.get_current_active_span()
-                if active:
-                    trace_id = active.request_id
-            except Exception:
-                pass
 
         try:
             record = build_trace_record(
