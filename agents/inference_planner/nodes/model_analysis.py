@@ -136,6 +136,25 @@ async def interpret_model_config(state: PlannerState) -> dict[str, Any]:
         from langchain_core.messages import HumanMessage, SystemMessage
         from langchain_openai import ChatOpenAI
 
+        _mlflow_available = False
+        try:
+            import mlflow
+            _mlflow_available = True
+        except ImportError:
+            pass
+
+        if _mlflow_available:
+            try:
+                from backend.tracing import is_tracing_enabled
+                if is_tracing_enabled():
+                    session_id = state.get("session_id", "")
+                    if session_id:
+                        span = mlflow.get_current_active_span()
+                        if span:
+                            span.set_attribute("mlflow.session.id", session_id)
+            except Exception:
+                pass
+
         llm_kwargs: dict[str, Any] = dict(
             model=model_name,
             base_url=base_url,
