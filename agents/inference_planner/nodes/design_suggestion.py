@@ -265,11 +265,11 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
         if lang_instruction:
             planning_prompt += lang_instruction
 
-        # Parent trace wraps both LLM calls so they appear as child spans in one row
+        # Parent span wraps both LLM calls so they appear as child spans in one trace row
         trace_cm: Any = contextlib.nullcontext()
         if _should_trace:
             try:
-                trace_cm = mlflow.start_trace(name="design_suggestion")
+                trace_cm = mlflow.start_span(name="design_suggestion")
             except Exception:
                 trace_cm = contextlib.nullcontext()
 
