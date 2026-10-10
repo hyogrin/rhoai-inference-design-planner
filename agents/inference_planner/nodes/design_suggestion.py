@@ -68,6 +68,16 @@ def _extract_tokens(response: Any) -> dict[str, int]:
     return {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
 
+def _set_span_token_usage(span: Any, tokens: dict[str, int]) -> None:
+    """Set token usage on a span using the MLflow-recognized attribute key."""
+    if span is None or not tokens.get("total_tokens"):
+        return
+    try:
+        span.set_attribute("mlflow.chat.tokenUsage", tokens)
+    except Exception:
+        pass
+
+
 def _precision_label(bits: int, weight_precision: str | None = None) -> str:
     if weight_precision:
         wp = weight_precision.lower()
@@ -292,7 +302,7 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
     trace_cm: Any = contextlib.nullcontext()
     if _should_trace:
         try:
-            trace_cm = mlflow.start_span(name="design_suggestion")
+            trace_cm = mlflow.start_span(name="design_suggestion", span_type="CHAIN")
         except Exception:
             trace_cm = contextlib.nullcontext()
 
@@ -321,7 +331,7 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
         plan_span_cm: Any = contextlib.nullcontext()
         if _should_trace:
             try:
-                plan_span_cm = mlflow.start_span(name="design_planning")
+                plan_span_cm = mlflow.start_span(name="design_planning", span_type="LLM")
             except Exception:
                 plan_span_cm = contextlib.nullcontext()
 
@@ -339,8 +349,15 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
             logger.info("Planning step completed (%d chars, %.0fms, %s)", len(draft_plan), plan_latency, plan_tokens)
             if plan_span is not None:
                 try:
-                    plan_span.set_inputs({"system": DESIGN_PLANNING_SYSTEM[:200], "user": planning_prompt[:300]})
-                    plan_span.set_outputs({"plan": draft_plan[:500], "latency_ms": round(plan_latency), **plan_tokens})
+                    plan_span.set_inputs({
+                        "messages": [
+                            {"role": "system", "content": DESIGN_PLANNING_SYSTEM[:300]},
+                            {"role": "user", "content": planning_prompt[:300]},
+                        ],
+                        "model": model_name,
+                    })
+                    plan_span.set_outputs({"content": draft_plan[:500]})
+                    _set_span_token_usage(plan_span, plan_tokens)
                 except Exception:
                     pass
 
@@ -354,7 +371,7 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
         val_span_cm: Any = contextlib.nullcontext()
         if _should_trace:
             try:
-                val_span_cm = mlflow.start_span(name="design_validation")
+                val_span_cm = mlflow.start_span(name="design_validation", span_type="LLM")
             except Exception:
                 val_span_cm = contextlib.nullcontext()
 
@@ -374,15 +391,22 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
             logger.info("Validation step completed (%d chars, %.0fms, %s)", len(suggestion_text), val_latency, val_tokens)
             if val_span is not None:
                 try:
-                    val_span.set_inputs({"system": DESIGN_VALIDATION_SYSTEM[:200], "user": validation_prompt[:300]})
-                    val_span.set_outputs({"suggestion": suggestion_text[:500], "latency_ms": round(val_latency), **val_tokens})
+                    val_span.set_inputs({
+                        "messages": [
+                            {"role": "system", "content": DESIGN_VALIDATION_SYSTEM[:300]},
+                            {"role": "user", "content": validation_prompt[:300]},
+                        ],
+                        "model": model_name,
+                    })
+                    val_span.set_outputs({"content": suggestion_text[:500]})
+                    _set_span_token_usage(val_span, val_tokens)
                 except Exception:
                     pass
 
         total_latency_ms = (time.monotonic() - t0) * 1000
         all_tokens = {k: plan_tokens.get(k, 0) + val_tokens.get(k, 0) for k in ("input_tokens", "output_tokens", "total_tokens")}
 
-        # Set root span outputs
+        # Set root span outputs + aggregated token usage
         if root_span is not None:
             try:
                 root_span.set_outputs({
@@ -390,8 +414,8 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                     "planning_ms": round(plan_latency),
                     "validation_ms": round(val_latency),
                     "total_ms": round(total_latency_ms),
-                    **all_tokens,
                 })
+                _set_span_token_usage(root_span, all_tokens)
             except Exception:
                 pass
 
