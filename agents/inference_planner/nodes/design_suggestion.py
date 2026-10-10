@@ -14,8 +14,12 @@ from typing import Any
 import httpx
 
 from agents.inference_planner.prompts import (
+    DESIGN_PLANNING_SYSTEM,
+    DESIGN_PLANNING_USER,
     DESIGN_SUGGESTION_SYSTEM,
     DESIGN_SUGGESTION_USER,
+    DESIGN_VALIDATION_SYSTEM,
+    DESIGN_VALIDATION_USER,
     LANGUAGE_INSTRUCTION,
     LANGUAGE_NAMES,
 )
@@ -217,7 +221,7 @@ def _build_context(state: PlannerState) -> dict[str, str]:
 
 
 async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
-    """Call LLM to generate an inference design suggestion from accumulated state."""
+    """Call LLM twice: (1) draft a deployment plan, (2) validate and expand into final suggestion."""
     from backend.config import get_settings
     from backend.tracing import append_trace_record, build_trace_record
 
@@ -228,14 +232,12 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
     verify_ssl = settings.verify_ssl
 
     ctx = _build_context(state)
-    user_prompt = DESIGN_SUGGESTION_USER.format(**{k: str(v) for k, v in ctx.items()})
 
     language = state.get("language", "en")
     language_name = LANGUAGE_NAMES.get(language)
     lang_instruction = ""
     if language_name:
         lang_instruction = LANGUAGE_INSTRUCTION.format(language_name=language_name)
-        user_prompt += lang_instruction
 
     session_id = state.get("session_id", "")
 
@@ -249,98 +251,156 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
             "phase_history": ["design_suggestion_fallback"],
         }
 
-    # MLflow tracing: use context manager (required for MLflow 3.x)
     import contextlib
 
     _should_trace = _mlflow_available
     if _should_trace:
         from backend.tracing import is_tracing_enabled
-
         _should_trace = is_tracing_enabled()
-
-    trace_cm: Any = contextlib.nullcontext()
-    if _should_trace:
-        try:
-            trace_cm = mlflow.start_span(name="design_suggestion")
-        except Exception:
-            logger.debug("MLflow span creation skipped", exc_info=True)
-            trace_cm = contextlib.nullcontext()
 
     t0 = time.monotonic()
     try:
-        with trace_cm as span:
-            if span is not None:
-                try:
-                    span.set_inputs({
-                        "model_repo_id": ctx.get("model_repo_id"),
-                        "gpu_type": ctx.get("gpu_type"),
-                        "precision_label": ctx.get("precision_label"),
-                        "model_used": model_name,
-                        "temperature": 0.3,
-                        "max_tokens": 1500,
-                    })
-                    span.set_attributes({
-                        "session_id": session_id,
-                        "platform": ctx.get("platform", ""),
-                        "utilization_pct": str(ctx.get("utilization_pct", "")),
-                    })
-                except Exception:
-                    pass
+        # ── Step 1: Planning ──
+        planning_prompt = DESIGN_PLANNING_USER.format(**{k: str(v) for k, v in ctx.items()})
+        if lang_instruction:
+            planning_prompt += lang_instruction
 
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(60.0), verify=verify_ssl
-            ) as client:
-                resp = await client.post(
+        plan_span_cm: Any = contextlib.nullcontext()
+        if _should_trace:
+            try:
+                plan_span_cm = mlflow.start_span(name="design_planning")
+            except Exception:
+                plan_span_cm = contextlib.nullcontext()
+
+        t1 = time.monotonic()
+        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0), verify=verify_ssl) as client:
+            with plan_span_cm as plan_span:
+                if plan_span is not None:
+                    try:
+                        plan_span.set_inputs({
+                            "step": "planning",
+                            "model_repo_id": ctx.get("model_repo_id"),
+                            "model_used": model_name,
+                        })
+                    except Exception:
+                        pass
+
+                plan_resp = await client.post(
                     f"{base_url}/chat/completions",
                     headers={"Authorization": f"Bearer {api_key}"},
                     json={
                         "model": model_name,
                         "messages": [
-                            {"role": "system", "content": DESIGN_SUGGESTION_SYSTEM + lang_instruction},
-                            {"role": "user", "content": user_prompt},
+                            {"role": "system", "content": DESIGN_PLANNING_SYSTEM + lang_instruction},
+                            {"role": "user", "content": planning_prompt},
+                        ],
+                        "max_tokens": 1024,
+                        "temperature": 0.3,
+                    },
+                )
+                plan_resp.raise_for_status()
+                plan_data = plan_resp.json()
+                draft_plan = (
+                    plan_data["choices"][0]["message"].get("content")
+                    or plan_data["choices"][0]["message"].get("reasoning")
+                    or ""
+                ).strip()
+
+                plan_latency = (time.monotonic() - t1) * 1000
+                logger.info("Planning step completed (%d chars, %.0fms)", len(draft_plan), plan_latency)
+
+                if plan_span is not None:
+                    try:
+                        plan_span.set_outputs({
+                            "plan_length": len(draft_plan),
+                            "latency_ms": round(plan_latency),
+                        })
+                    except Exception:
+                        pass
+
+            # ── Step 2: Validation + Final Suggestion ──
+            validation_ctx = {k: str(v) for k, v in ctx.items()}
+            validation_ctx["draft_plan"] = draft_plan
+            validation_prompt = DESIGN_VALIDATION_USER.format(**validation_ctx)
+            if lang_instruction:
+                validation_prompt += lang_instruction
+
+            val_span_cm: Any = contextlib.nullcontext()
+            if _should_trace:
+                try:
+                    val_span_cm = mlflow.start_span(name="design_validation")
+                except Exception:
+                    val_span_cm = contextlib.nullcontext()
+
+            t2 = time.monotonic()
+            with val_span_cm as val_span:
+                if val_span is not None:
+                    try:
+                        val_span.set_inputs({
+                            "step": "validation",
+                            "model_repo_id": ctx.get("model_repo_id"),
+                            "model_used": model_name,
+                            "draft_plan_length": len(draft_plan),
+                        })
+                    except Exception:
+                        pass
+
+                val_resp = await client.post(
+                    f"{base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={
+                        "model": model_name,
+                        "messages": [
+                            {"role": "system", "content": DESIGN_VALIDATION_SYSTEM + lang_instruction},
+                            {"role": "user", "content": validation_prompt},
                         ],
                         "max_tokens": 4096,
                         "temperature": 0.3,
                     },
                 )
-                resp.raise_for_status()
-                if not resp.content:
-                    raise ValueError(f"LLM returned empty response (HTTP {resp.status_code})")
-                data = resp.json()
-                msg = data["choices"][0]["message"]
+                val_resp.raise_for_status()
+                if not val_resp.content:
+                    raise ValueError(f"LLM returned empty response (HTTP {val_resp.status_code})")
+                val_data = val_resp.json()
+                msg = val_data["choices"][0]["message"]
                 suggestion_text = (msg.get("content") or msg.get("reasoning") or "").strip()
                 if not suggestion_text:
                     raise ValueError("LLM returned message with no content or reasoning")
 
-            latency_ms = (time.monotonic() - t0) * 1000
-            logger.info("Design suggestion generated (%d chars, %.0fms)", len(suggestion_text), latency_ms)
+                val_latency = (time.monotonic() - t2) * 1000
+                logger.info("Validation step completed (%d chars, %.0fms)", len(suggestion_text), val_latency)
 
-            if span is not None:
-                try:
-                    span.set_outputs({"suggestion_length": len(suggestion_text), "source": "llm"})
-                except Exception:
-                    pass
+                if val_span is not None:
+                    try:
+                        val_span.set_outputs({
+                            "suggestion_length": len(suggestion_text),
+                            "latency_ms": round(val_latency),
+                            "source": "llm",
+                        })
+                    except Exception:
+                        pass
 
-            trace_id = ""
-            if _should_trace:
-                try:
-                    active = mlflow.get_current_active_span()
-                    if active:
-                        trace_id = active.request_id
-                except Exception:
-                    pass
+        total_latency_ms = (time.monotonic() - t0) * 1000
+        logger.info("Design suggestion total (plan+validate): %.0fms", total_latency_ms)
 
-        # span is automatically closed by context manager
+        trace_id = ""
+        if _should_trace:
+            try:
+                active = mlflow.get_current_active_span()
+                if active:
+                    trace_id = active.request_id
+            except Exception:
+                pass
 
         try:
             record = build_trace_record(
                 session_id=session_id,
                 model_used=model_name,
                 input_context={k: str(v) for k, v in ctx.items()},
-                system_prompt=DESIGN_SUGGESTION_SYSTEM,
-                user_prompt=user_prompt,
+                system_prompt=DESIGN_PLANNING_SYSTEM,
+                user_prompt=f"[Planning]\n{planning_prompt}\n\n[Validation]\n{validation_prompt}",
                 output=suggestion_text,
-                latency_ms=latency_ms,
+                latency_ms=total_latency_ms,
                 trace_id=trace_id,
             )
             append_trace_record(record)
@@ -350,8 +410,11 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
         existing_rec = state.get("recommendation") or {}
         existing_rec["design_suggestion"] = {
             "content": suggestion_text,
+            "draft_plan": draft_plan,
             "model_used": model_name,
             "source": "llm",
+            "planning_latency_ms": round(plan_latency),
+            "validation_latency_ms": round(val_latency),
         }
 
         return {
@@ -367,7 +430,6 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
             exc,
             exc_info=True,
         )
-        # span already closed by context manager __exit__
 
         fallback = _build_fallback_suggestion(ctx)
 
@@ -376,8 +438,8 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                 session_id=session_id,
                 model_used=f"fallback (error: {type(exc).__name__})",
                 input_context={k: str(v) for k, v in ctx.items()},
-                system_prompt=DESIGN_SUGGESTION_SYSTEM,
-                user_prompt=user_prompt,
+                system_prompt=DESIGN_PLANNING_SYSTEM,
+                user_prompt="(failed before completion)",
                 output=fallback["content"],
                 latency_ms=latency_ms,
             )

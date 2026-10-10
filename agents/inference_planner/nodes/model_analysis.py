@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from typing import Any, Literal
 
 import httpx
@@ -17,6 +18,14 @@ from pydantic import BaseModel
 from agents.inference_planner.state import PlannerState
 
 logger = logging.getLogger(__name__)
+
+_mlflow_available = False
+try:
+    import mlflow
+
+    _mlflow_available = True
+except ImportError:
+    pass
 
 MODEL_ANALYSIS_SYSTEM = """\
 You are a model inference expert. Given a HuggingFace model's architecture metadata, \
@@ -133,37 +142,75 @@ async def interpret_model_config(state: PlannerState) -> dict[str, Any]:
     )
 
     try:
-        async with httpx.AsyncClient(verify=verify_ssl, timeout=30.0) as client:
-            response = await client.post(
-                f"{base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": model_name,
-                    "messages": [
-                        {"role": "system", "content": MODEL_ANALYSIS_SYSTEM},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    "temperature": 0.0,
-                    "max_tokens": 2000,
-                    "response_format": {"type": "json_object"},
-                },
-            )
-            response.raise_for_status()
-            if not response.content:
-                raise ValueError(f"LLM returned empty response (HTTP {response.status_code})")
-            data = response.json()
-            msg = data["choices"][0]["message"]
-            content = msg.get("content") or msg.get("reasoning")
-            if not content:
-                raise ValueError("LLM returned message with no content or reasoning")
-            parsed = json.loads(content)
+        import contextlib
 
-            # Validate with Pydantic
-            result = ModelAnalysisResult(**parsed)
-            logger.info("LLM model analysis: %s", result.model_dump())
+        _should_trace = _mlflow_available
+        if _should_trace:
+            from backend.tracing import is_tracing_enabled
+            _should_trace = is_tracing_enabled()
+
+        span_cm: Any = contextlib.nullcontext()
+        if _should_trace:
+            try:
+                span_cm = mlflow.start_span(name="model_analysis")
+            except Exception:
+                span_cm = contextlib.nullcontext()
+
+        t0 = time.monotonic()
+        with span_cm as span:
+            if span is not None:
+                try:
+                    span.set_inputs({
+                        "model_repo_id": model_repo_id,
+                        "model_used": model_name,
+                        "arch_keys": list(arch_for_prompt.keys()),
+                    })
+                except Exception:
+                    pass
+
+            async with httpx.AsyncClient(verify=verify_ssl, timeout=30.0) as client:
+                response = await client.post(
+                    f"{base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model_name,
+                        "messages": [
+                            {"role": "system", "content": MODEL_ANALYSIS_SYSTEM},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        "temperature": 0.0,
+                        "max_tokens": 2000,
+                        "response_format": {"type": "json_object"},
+                    },
+                )
+                response.raise_for_status()
+                if not response.content:
+                    raise ValueError(f"LLM returned empty response (HTTP {response.status_code})")
+                data = response.json()
+                msg = data["choices"][0]["message"]
+                content = msg.get("content") or msg.get("reasoning")
+                if not content:
+                    raise ValueError("LLM returned message with no content or reasoning")
+                parsed = json.loads(content)
+
+                # Validate with Pydantic
+                result = ModelAnalysisResult(**parsed)
+                latency_ms = (time.monotonic() - t0) * 1000
+                logger.info("LLM model analysis: %s (%.0fms)", result.model_dump(), latency_ms)
+
+                if span is not None:
+                    try:
+                        span.set_outputs({
+                            "effective_bits": result.effective_bits,
+                            "kv_layout": result.kv_layout,
+                            "weight_precision": result.weight_precision,
+                            "latency_ms": round(latency_ms),
+                        })
+                    except Exception:
+                        pass
 
             return {
                 "model_analysis": result.model_dump(),

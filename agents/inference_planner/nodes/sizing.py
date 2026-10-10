@@ -100,7 +100,10 @@ def _get_param_count(state: PlannerState) -> float | None:
 
 async def _estimate_params_with_llm(repo_id: str) -> float | None:
     """Use LLM to estimate parameter count when regex and HF metadata fail."""
+    import contextlib
     import os
+    import time as _time
+
     import httpx
 
     from backend.config import get_settings
@@ -114,6 +117,25 @@ async def _estimate_params_with_llm(repo_id: str) -> float | None:
     if not api_key:
         return None
 
+    _mlflow_ok = False
+    try:
+        import mlflow
+        _mlflow_ok = True
+    except ImportError:
+        pass
+
+    _should_trace = _mlflow_ok
+    if _should_trace:
+        from backend.tracing import is_tracing_enabled
+        _should_trace = is_tracing_enabled()
+
+    span_cm: Any = contextlib.nullcontext()
+    if _should_trace:
+        try:
+            span_cm = mlflow.start_span(name="estimate_params_llm")
+        except Exception:
+            span_cm = contextlib.nullcontext()
+
     prompt = (
         f"What is the approximate parameter count (in billions) for the model '{repo_id}'? "
         f"Reply with ONLY a number (e.g., 7, 13, 70, 405). "
@@ -121,28 +143,42 @@ async def _estimate_params_with_llm(repo_id: str) -> float | None:
     )
 
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(15.0), verify=verify_ssl) as client:
-            resp = await client.post(
-                f"{base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {api_key}"},
-                json={
-                    "model": model_name,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 20,
-                    "temperature": 0,
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            content = data["choices"][0]["message"]["content"].strip()
+        t0 = _time.monotonic()
+        with span_cm as span:
+            if span is not None:
+                try:
+                    span.set_inputs({"repo_id": repo_id, "model_used": model_name})
+                except Exception:
+                    pass
 
-            import re
-            match = re.search(r"([\d.]+)", content)
-            if match:
-                val = float(match.group(1))
-                if 0.1 <= val <= 2000:
-                    logger.info("LLM estimated %s params as %.1fB", repo_id, val)
-                    return val
+            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0), verify=verify_ssl) as client:
+                resp = await client.post(
+                    f"{base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={
+                        "model": model_name,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 20,
+                        "temperature": 0,
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                content = data["choices"][0]["message"]["content"].strip()
+
+                import re
+                match = re.search(r"([\d.]+)", content)
+                if match:
+                    val = float(match.group(1))
+                    if 0.1 <= val <= 2000:
+                        latency_ms = (_time.monotonic() - t0) * 1000
+                        logger.info("LLM estimated %s params as %.1fB (%.0fms)", repo_id, val, latency_ms)
+                        if span is not None:
+                            try:
+                                span.set_outputs({"estimated_params_b": val, "latency_ms": round(latency_ms)})
+                            except Exception:
+                                pass
+                        return val
     except Exception as exc:
         logger.warning("LLM param estimation failed for %s: %s", repo_id, exc)
 

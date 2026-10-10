@@ -222,6 +222,146 @@ ServingRuntime image and compatibility testing are required.
 - NEVER cite vLLM versions, speculative decoding configs, or RHOAI validation \
 claims that are not explicitly present in the evidence."""
 
+DESIGN_PLANNING_SYSTEM = """\
+You are a senior AI infrastructure architect. Given deployment context, produce a \
+concise deployment PLAN as a structured checklist. Focus on key decisions only.
+
+Output a short plan with these sections:
+1. **Parallelism Decision**: TP size, PP if needed, replica count rationale
+2. **Memory Budget**: weights + KV + overhead fit analysis, gpu-memory-utilization target
+3. **Performance Risk**: roofline gap, MoE caveats, TTFT/TPOT feasibility
+4. **Configuration Sketch**: key vLLM flags (max-num-seqs, chunked-prefill, etc.)
+5. **Open Questions**: anything uncertain or requiring validation
+
+Be brief — 8-12 bullet points total. This plan will be reviewed and expanded."""
+
+DESIGN_PLANNING_USER = """\
+Create a deployment plan for the following context.
+
+## Model
+- Repository: {model_repo_id}
+- Architecture: {architecture_type} — {architecture_detail}
+- Parameters: {parameters_display}B, Context: {context_length} tokens
+- Precision: {precision_label} ({quantization_method}), Weights: {model_weights_gb} GiB
+
+## Hardware
+- {gpu_count}× {gpu_type} ({total_vram_gb} GB total), Platform: {platform}
+
+## Memory
+- Weights: {model_weights_gb} GB, KV: {kv_cache_gb} GiB, Overhead: {overhead_gb} GB
+- Total: {total_required_gb} / {total_available_gb} GB, Utilization: {utilization_pct}%, Fits: {fits}
+
+## Performance (Roofline)
+{moe_warning}{hw_caution_note}\
+- Decode: {decode_tps} tok/s, TPOT: {estimated_tpot_ms}ms, TTFT: {estimated_ttft_ms}ms
+- Ridge batch: {ridge_batch}, Max batch at target TPOT: {max_batch_at_target}
+
+## Workload
+- Use cases: {use_cases}, Target users: {target_users}
+- Max concurrent: {max_concurrent}, TTFT target: {ttft_target_ms}ms, TPOT target: {tpot_target_ms}ms
+
+## Evidence
+{evidence_summary}
+
+Produce the deployment plan now."""
+
+
+DESIGN_VALIDATION_SYSTEM = """\
+You are a senior AI infrastructure reviewer. You are given:
+1. Deployment context (model, hardware, memory, performance data)
+2. A draft deployment plan from another architect
+
+Your job:
+- Validate the plan against the quantitative data
+- Fix any factual errors or unsafe recommendations
+- Expand the plan into a full, production-ready recommendation
+
+Follow the SAME principles as the original architect regarding roofline caveats, \
+MoE limitations, evidence-only citations, MIG guidance, and conservative initial configs."""
+
+DESIGN_VALIDATION_USER = """\
+## Draft Deployment Plan
+{draft_plan}
+
+---
+
+Review and expand the above plan into a full recommendation based on the deployment context below.
+
+## Model
+- Repository: {model_repo_id}
+- Architecture: {architecture_type}
+- Architecture detail: {architecture_detail}
+- Parameters: {parameters_display}
+- Context length: {context_length} tokens
+- Precision: {precision_label} ({quantization_method})
+- Weight source: {weight_source} ({model_weights_gb} GiB)
+- RHOAI validation: {rhoai_validated}
+
+## Hardware Configuration
+- Platform: {platform}
+- GPU: {gpu_count}× {gpu_type}
+- Total VRAM: {total_vram_gb} GB
+- Cloud instance: {cloud_instance}
+- Region: {cloud_region}
+- Per-GPU hourly rate: {per_gpu_hourly}
+
+## Memory Analysis
+- Model weights: {model_weights_gb} GB
+- KV cache: {kv_cache_gb} GiB for {effective_concurrent} concurrent × {seq_len} seq_len
+- KV layout: {kv_layout}
+- Memory-feasible concurrency: {concurrency_low}–{concurrency_high} full-length sequences
+- Runtime overhead: {overhead_gb} GB
+- Total required: {total_required_gb} GB / {total_available_gb} GB available
+- Utilization: {utilization_pct}%
+- Fits: {fits}
+
+## Performance Targets
+- Use cases: {use_cases}
+- Target users: {target_users}
+- Max concurrent requests: {max_concurrent}
+- Average input tokens: {ttft_input_tokens}
+- Average output tokens: {avg_output_tokens}
+- TTFT target: {ttft_target_ms}ms
+- TPOT target: {tpot_target_ms}ms
+
+## Performance Forecast (Roofline — THEORETICAL)
+{moe_warning}{hw_caution_note}\
+- Decode throughput: {decode_tps} tok/s
+- Estimated TPOT: {estimated_tpot_ms}ms
+- Estimated TTFT: {estimated_ttft_ms}ms (input: {ttft_input_tokens} tokens)
+- Ridge batch: {ridge_batch}
+- Max batch at target TPOT: {max_batch_at_target}
+
+## Monthly Cost
+{cost_summary}
+
+## Evidence
+{evidence_summary}
+
+---
+
+Provide the final recommendation in this structure:
+
+### Architecture Direction
+2-3 sentences: parallelism strategy, llm-d need, single-vs-multi GPU rationale.
+
+### Key Considerations
+4-6 bullets: memory budget, parallelism rationale, workload isolation, vLLM config, \
+capacity validation, deployment strategy.
+
+### Risk Factors
+2-4 bullets: architecture uncertainty, vLLM compatibility, GPU interconnect, quantization.
+
+### Alternative Approaches
+1-2 bullets with prerequisites.
+
+RULES:
+- Flag if draft plan has errors and correct them.
+- NEVER present roofline numbers as production guarantees.
+- max-num-seqs = actual target concurrency ({max_concurrent}).
+- NEVER cite vLLM versions or configs not in the evidence."""
+
+
 LANGUAGE_NAMES: dict[str, str] = {
     "ko": "Korean",
     "zh": "Chinese (Simplified)",
