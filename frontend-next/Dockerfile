@@ -5,10 +5,9 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_AGENT_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-ENV NEXT_PUBLIC_AGENT_URL=${NEXT_PUBLIC_AGENT_URL}
+# Build with placeholders — replaced at container startup by entrypoint
+ENV NEXT_PUBLIC_API_URL=__NEXT_PUBLIC_API_URL_PLACEHOLDER__
+ENV NEXT_PUBLIC_AGENT_URL=__NEXT_PUBLIC_AGENT_URL_PLACEHOLDER__
 
 COPY . .
 RUN mkdir -p public && npm run build
@@ -20,10 +19,11 @@ WORKDIR /app
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+COPY docker-entrypoint.sh ./
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

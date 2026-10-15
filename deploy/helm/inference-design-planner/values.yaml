@@ -1,5 +1,5 @@
 namespace: inference-planner
-domain: apps.ocp.jj6tj.sandbox5333.opentlc.com
+domain: apps.ocp.wn7bz.sandbox786.opentlc.com
 
 backend:
   replicas: 1
@@ -55,7 +55,7 @@ searxng:
 config:
   APP_ENV: production
   APP_LOG_LEVEL: INFO
-  APP_CORS_ORIGINS: "https://inference-planner.apps.ocp.jj6tj.sandbox5333.opentlc.com"
+  APP_CORS_ORIGINS: "https://inference-planner.apps.ocp.wn7bz.sandbox786.opentlc.com"
   LLM_MODEL_NAME: glm-53-flash
   VERIFY_SSL: "false"
   MLFLOW_TRACKING_URI: "https://rh-ai.apps.openshift-cluster.sandbox3031.opentlc.com/mlflow"
@@ -64,6 +64,8 @@ config:
   MLFLOW_EXPERIMENT_NAME: inference-design-planner
   PROMETHEUS_ENABLED: "true"
   SEARXNG_URL: "http://localhost:8080"
+  NEXT_PUBLIC_API_URL: ""   # e.g. https://inference-planner-api.apps.your-cluster.com
+  NEXT_PUBLIC_AGENT_URL: "" # e.g. https://inference-planner-api.apps.your-cluster.com/agent
 
 secret:
   OPENAI_API_KEY: sk-oai-1ThWxHclnScNcNXFc_71Z5mqjBeRTdqvIfqu83zvjgpJVRHjQdhCwajjw8tSR

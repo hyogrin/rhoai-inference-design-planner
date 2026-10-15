@@ -26,6 +26,9 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.frontend.port }}
+          envFrom:
+            - configMapRef:
+                name: planner-config
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
           readinessProbe:

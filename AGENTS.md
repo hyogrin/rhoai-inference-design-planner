@@ -49,10 +49,18 @@ make run-frontend  # Start frontend
 
 ## Cluster Deployment
 
-**Always use `scripts/deploy.sh` (or `make deploy`) for cluster deployments.**
-The script automatically resolves the backend route from OpenShift and passes
-`NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_AGENT_URL` as Docker build-args — these
-are required because Next.js inlines them at build time.
+The frontend image is **cluster-agnostic** — build once, deploy anywhere.
+API URLs are injected at container startup via environment variables,
+just like `OPENAI_BASE_URL` for the backend.
+
+**Required env vars for deployment:**
+```bash
+export NEXT_PUBLIC_API_URL=https://your-backend-route   # Backend API URL
+export NEXT_PUBLIC_AGENT_URL=https://your-backend-route/agent  # Agent SSE URL
+export OPENAI_API_KEY=...
+export OPENAI_BASE_URL=...
+export LLM_MODEL_NAME=...
+```
 
 ```bash
 make deploy            # Build, push, deploy ALL (backend + frontend)
@@ -64,10 +72,6 @@ make deploy-frontend   # Frontend only
 ./scripts/deploy.sh backend
 ./scripts/deploy.sh frontend
 ```
-
-⚠️ **Never** run `docker build` for frontend without `--build-arg NEXT_PUBLIC_API_URL=...`
-and `--build-arg NEXT_PUBLIC_AGENT_URL=...` — it will silently fall back to `localhost`
-and cause "Failed to fetch" on the cluster.
 
 ## Conventions
 

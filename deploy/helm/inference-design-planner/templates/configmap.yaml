@@ -17,4 +17,6 @@ data:
   MLFLOW_EXPERIMENT_NAME: {{ .Values.config.MLFLOW_EXPERIMENT_NAME | quote }}
   PROMETHEUS_ENABLED: {{ .Values.config.PROMETHEUS_ENABLED | quote }}
   SEARXNG_URL: {{ .Values.config.SEARXNG_URL | quote }}
+  NEXT_PUBLIC_API_URL: {{ .Values.config.NEXT_PUBLIC_API_URL | quote }}
+  NEXT_PUBLIC_AGENT_URL: {{ .Values.config.NEXT_PUBLIC_AGENT_URL | quote }}
   HF_HOME: "/tmp/hf_cache"

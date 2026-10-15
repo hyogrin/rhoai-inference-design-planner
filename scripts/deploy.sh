@@ -20,26 +20,32 @@ FRONTEND_IMAGE="${REGISTRY}/inference-planner-frontend:latest"
 NAMESPACE="${NAMESPACE:-inference-planner}"
 PLATFORM="${PLATFORM:-linux/amd64}"
 
-# ── Derive API URLs from cluster route (or use explicit override) ─
-CLUSTER_DOMAIN="${CLUSTER_DOMAIN:-}"
-if [[ -z "$CLUSTER_DOMAIN" ]]; then
-  CLUSTER_DOMAIN=$(oc get route inference-planner-api -n "$NAMESPACE" \
-    -o jsonpath='{.spec.host}' 2>/dev/null || true)
-fi
-if [[ -z "$CLUSTER_DOMAIN" ]]; then
-  echo "ERROR: Cannot determine backend route. Set CLUSTER_DOMAIN or ensure 'oc' is logged in." >&2
-  exit 1
-fi
-
-NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-https://${CLUSTER_DOMAIN}}"
-NEXT_PUBLIC_AGENT_URL="${NEXT_PUBLIC_AGENT_URL:-https://${CLUSTER_DOMAIN}/agent}"
-
-# ── What to deploy ────────────────────────────────────────────────
-TARGET="${1:-all}"
-
 info()  { echo -e "\033[36m▸ $*\033[0m"; }
 ok()    { echo -e "\033[32m✔ $*\033[0m"; }
 fail()  { echo -e "\033[31m✖ $*\033[0m" >&2; exit 1; }
+
+# ── Auto-detect cluster apps domain from oc login ─────────────────
+# Reads the ingress domain from the logged-in cluster so you only need
+# to run: oc login … && ./scripts/deploy.sh
+APPS_DOMAIN="${APPS_DOMAIN:-}"
+if [[ -z "$APPS_DOMAIN" ]]; then
+  APPS_DOMAIN=$(oc get ingresses.config/cluster \
+    -o jsonpath='{.spec.domain}' 2>/dev/null || true)
+fi
+if [[ -z "$APPS_DOMAIN" ]]; then
+  fail "Cannot detect cluster apps domain. Run 'oc login' first or set APPS_DOMAIN."
+fi
+
+ROUTE_PREFIX="${ROUTE_PREFIX:-inference-planner-api}"
+NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-https://${ROUTE_PREFIX}.${APPS_DOMAIN}}"
+NEXT_PUBLIC_AGENT_URL="${NEXT_PUBLIC_AGENT_URL:-${NEXT_PUBLIC_API_URL}/agent}"
+
+info "Cluster apps domain : $APPS_DOMAIN"
+info "NEXT_PUBLIC_API_URL : $NEXT_PUBLIC_API_URL"
+info "NEXT_PUBLIC_AGENT_URL: $NEXT_PUBLIC_AGENT_URL"
+
+# ── What to deploy ────────────────────────────────────────────────
+TARGET="${1:-all}"
 
 # ── Backend ───────────────────────────────────────────────────────
 build_backend() {
@@ -58,7 +64,7 @@ push_backend() {
 }
 
 deploy_backend() {
-  info "Rolling out backend…"
+  info "Rolling out backend (APPS_DOMAIN=$APPS_DOMAIN)…"
   oc rollout restart deployment/backend -n "$NAMESPACE"
   oc rollout status  deployment/backend -n "$NAMESPACE" --timeout=120s
   ok "Backend deployed"
@@ -66,16 +72,12 @@ deploy_backend() {
 
 # ── Frontend ──────────────────────────────────────────────────────
 build_frontend() {
-  info "Building frontend image…"
-  info "  NEXT_PUBLIC_API_URL   = $NEXT_PUBLIC_API_URL"
-  info "  NEXT_PUBLIC_AGENT_URL = $NEXT_PUBLIC_AGENT_URL"
+  info "Building frontend image (cluster-agnostic)…"
   docker build --platform "$PLATFORM" \
-    --build-arg "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" \
-    --build-arg "NEXT_PUBLIC_AGENT_URL=$NEXT_PUBLIC_AGENT_URL" \
     -t "$FRONTEND_IMAGE" \
     -f "$PROJECT_ROOT/frontend-next/Dockerfile" \
     "$PROJECT_ROOT/frontend-next/"
-  ok "Frontend image built (API URLs baked in)"
+  ok "Frontend image built (API URLs injected at runtime via env vars)"
 }
 
 push_frontend() {
@@ -85,10 +87,14 @@ push_frontend() {
 }
 
 deploy_frontend() {
-  info "Rolling out frontend…"
+  info "Setting frontend API URLs and rolling out…"
+  oc set env deployment/frontend \
+    NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL" \
+    NEXT_PUBLIC_AGENT_URL="$NEXT_PUBLIC_AGENT_URL" \
+    -n "$NAMESPACE" 2>/dev/null || true
   oc rollout restart deployment/frontend -n "$NAMESPACE"
   oc rollout status  deployment/frontend -n "$NAMESPACE" --timeout=120s
-  ok "Frontend deployed"
+  ok "Frontend deployed (API → $NEXT_PUBLIC_API_URL)"
 }
 
 # ── Orchestrate ───────────────────────────────────────────────────
