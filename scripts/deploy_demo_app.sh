@@ -495,6 +495,10 @@ EOF
     fi
 fi
 
+# Force rollout to pull latest image (oc apply won't trigger if spec unchanged)
+oc rollout restart deployment/planner-backend -n "$NS" 2>/dev/null || true
+oc rollout restart deployment/planner-frontend -n "$NS" 2>/dev/null || true
+
 # Wait + Verify
 oc rollout status deployment/planner-backend -n "$NS" --timeout=600s 2>/dev/null || \
     warn "Backend rollout timeout (check: oc describe pod -l app=planner-backend -n $NS)"
