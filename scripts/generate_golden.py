@@ -5,7 +5,7 @@ Reads   data/traces/design_suggestions.jsonl   (production traces)
 Writes  data/traces/golden_suggestions.jsonl   (golden references)
 
 By default uses the OpenAI-compatible endpoint already configured in .env
-(OPENAI_BASE_URL / OPENAI_API_KEY) with a different model name.
+(LLM_BASE_URL / LLM_API_KEY) with a different model name.
 Optionally pass --backend anthropic to use the Anthropic SDK (requires
 ANTHROPIC_API_KEY and `pip install anthropic`).
 
@@ -160,9 +160,9 @@ def main() -> None:
             print("ERROR: ANTHROPIC_API_KEY not set. Add it to .env or export it.")
             sys.exit(1)
     else:
-        api_key = settings.openai_api_key
+        api_key = settings.llm_api_key
         if not api_key and not args.dry_run:
-            print("ERROR: OPENAI_API_KEY not set. Add it to .env or export it.")
+            print("ERROR: LLM_API_KEY not set. Add it to .env or export it.")
             sys.exit(1)
 
     traces = load_traces(INPUT_JSONL, limit=args.limit)
@@ -218,7 +218,7 @@ def main() -> None:
                 )
             else:
                 golden_text, latency_ms = call_openai_compat(
-                    base_url=settings.openai_base_url,
+                    base_url=settings.llm_base_url,
                     api_key=api_key,
                     model=golden_model,
                     system_prompt=system_prompt,

@@ -489,9 +489,9 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
     from backend.tracing import append_trace_record, build_trace_record
 
     settings = get_settings()
-    api_key = settings.openai_api_key or os.environ.get("OPENAI_API_KEY", "")
-    base_url = settings.openai_base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
-    model_name = settings.llm_model_name or os.environ.get("LLM_MODEL_NAME", "gpt-4o")
+    api_key = settings.llm_api_key
+    base_url = settings.llm_base_url
+    model_name = settings.llm_model
     verify_ssl = settings.verify_ssl
 
     ctx = _build_context(state)

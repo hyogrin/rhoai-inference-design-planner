@@ -9,7 +9,7 @@ data:
   APP_ENV: {{ .Values.config.APP_ENV | quote }}
   APP_LOG_LEVEL: {{ .Values.config.APP_LOG_LEVEL | quote }}
   APP_CORS_ORIGINS: {{ .Values.config.APP_CORS_ORIGINS | quote }}
-  LLM_MODEL_NAME: {{ .Values.config.LLM_MODEL_NAME | quote }}
+  LLM_MODEL: {{ .Values.config.LLM_MODEL | quote }}
   VERIFY_SSL: {{ .Values.config.VERIFY_SSL | quote }}
   MLFLOW_TRACKING_URI: {{ .Values.config.MLFLOW_TRACKING_URI | quote }}
   MLFLOW_TRACKING_INSECURE_TLS: {{ .Values.config.MLFLOW_TRACKING_INSECURE_TLS | quote }}

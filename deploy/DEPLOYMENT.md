@@ -110,9 +110,9 @@ cp sample.env .env
 
 ```bash
 # --- LLM (OpenAI-compatible) ---
-OPENAI_API_KEY=not-needed                    # or actual key if using OpenAI/MaaS
-OPENAI_BASE_URL=https://your-vllm-route/v1  # Direct vLLM route recommended
-LLM_MODEL_NAME=your-model-name
+LLM_API_KEY=not-needed                       # or actual key if using OpenAI/MaaS
+LLM_BASE_URL=https://your-vllm-route/v1     # Direct vLLM route recommended
+LLM_MODEL=your-model-name
 
 # --- Hugging Face (optional, for gated models) ---
 HF_TOKEN=hf_xxxxx
@@ -136,7 +136,7 @@ NEXT_PUBLIC_AGENT_URL=http://localhost:7001/agent
 
 > **Two LLM access modes:**
 >
-> | Mode | `OPENAI_BASE_URL` | Notes |
+> | Mode | `LLM_BASE_URL` | Notes |
 > |---|---|---|
 > | Direct vLLM route | `https://<model>-direct.<domain>/v1` | Recommended — avoids MaaS bug |
 > | MaaS API gateway | `https://maas.<domain>/<ns>/<model>/v1` | Use streaming mode only |
@@ -253,7 +253,7 @@ config:
   APP_ENV: production
   APP_LOG_LEVEL: INFO
   APP_CORS_ORIGINS: "https://inference-planner.apps.your-cluster.example.com"
-  LLM_MODEL_NAME: your-model-name
+  LLM_MODEL: your-model-name
   VERIFY_SSL: "false"
   MLFLOW_TRACKING_URI: "https://your-mlflow-endpoint/mlflow"
   MLFLOW_TRACKING_INSECURE_TLS: "true"
@@ -263,8 +263,8 @@ config:
   SEARXNG_URL: "https://your-searxng-instance"
 
 secret:
-  OPENAI_API_KEY: not-needed
-  OPENAI_BASE_URL: "https://your-vllm-direct-route/v1"
+  LLM_API_KEY: not-needed
+  LLM_BASE_URL: "https://your-vllm-direct-route/v1"
   DATABASE_URL: "postgresql+asyncpg://planner:<password>@postgresql:5432/inference_planner"
   DATABASE_URL_SYNC: "postgresql://planner:<password>@postgresql:5432/inference_planner"
   MLFLOW_TRACKING_TOKEN: "sha256~xxxxx"

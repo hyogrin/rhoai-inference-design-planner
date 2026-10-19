@@ -23,10 +23,10 @@ def is_tracing_enabled() -> bool:
 
 
 def _infer_mlflow_from_openai_url(base_url: str) -> tuple[str, str]:
-    """Derive MLflow tracking URI and workspace from OPENAI_BASE_URL.
+    """Derive MLflow tracking URI and workspace from LLM_BASE_URL.
 
     Convention for RHOAI MaaS gateway:
-        OPENAI_BASE_URL = https://maas.apps.<cluster>/<workspace>/<model>/v1
+        LLM_BASE_URL = https://maas.apps.<cluster>/<workspace>/<model>/v1
         MLflow URI       = https://rh-ai.apps.<cluster>/mlflow
         Workspace        = <workspace>  (first path segment)
 
@@ -57,7 +57,7 @@ def init_tracing() -> None:
 
     Resolution order for MLflow URI:
       1. Explicit ``MLFLOW_TRACKING_URI`` env / config
-      2. Auto-inferred from ``OPENAI_BASE_URL`` (RHOAI cluster convention)
+      2. Auto-inferred from ``LLM_BASE_URL`` (RHOAI cluster convention)
       3. Disabled
 
     Auth resolution:
@@ -75,15 +75,15 @@ def init_tracing() -> None:
     workspace = settings.mlflow_workspace
     insecure_tls = settings.mlflow_tracking_insecure_tls
 
-    # Auto-infer from OPENAI_BASE_URL when MLflow URI is not explicit
-    if not uri and settings.openai_base_url:
-        inferred_uri, inferred_ws = _infer_mlflow_from_openai_url(settings.openai_base_url)
+    # Auto-infer from LLM_BASE_URL when MLflow URI is not explicit
+    if not uri and settings.llm_base_url:
+        inferred_uri, inferred_ws = _infer_mlflow_from_openai_url(settings.llm_base_url)
         if inferred_uri:
             uri = inferred_uri
             workspace = workspace or inferred_ws
             insecure_tls = True
             logger.info(
-                "MLflow auto-detected from OPENAI_BASE_URL: uri=%s, workspace=%s",
+                "MLflow auto-detected from LLM_BASE_URL: uri=%s, workspace=%s",
                 uri, workspace,
             )
 

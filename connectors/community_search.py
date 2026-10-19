@@ -556,9 +556,9 @@ class CommunitySearchConnector:
         except Exception:
             return content[:500], _empty_usage
 
-        api_key = settings.openai_api_key or os.environ.get("OPENAI_API_KEY", "")
-        base_url = settings.openai_base_url or os.environ.get("OPENAI_BASE_URL", "")
-        model_name = settings.llm_model_name or os.environ.get("LLM_MODEL_NAME", "")
+        api_key = settings.llm_api_key
+        base_url = settings.llm_base_url
+        model_name = settings.llm_model
 
         if not api_key or not base_url or not model_name:
             logger.debug("LLM not configured, skipping content analysis")

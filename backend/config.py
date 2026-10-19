@@ -9,14 +9,12 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://planner:planner@localhost:5432/inference_planner"
     database_url_sync: str = "postgresql://planner:planner@localhost:5432/inference_planner"
 
-    openai_api_key: str = ""
-    openai_base_url: str = "https://api.openai.com/v1"
-    llm_model_name: str = "gpt-4o"
+    llm_base_url: str = "https://api.openai.com/v1"
+    llm_api_key: str = ""
+    llm_model: str = "gpt-4o"
 
     hf_token: str = ""
 
-    mcp_web_search_url: str = ""
-    searxng_url: str = ""
     verify_ssl: bool = True
 
     mlflow_tracking_uri: str = ""

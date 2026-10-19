@@ -51,15 +51,15 @@ make run-frontend  # Start frontend
 
 The frontend image is **cluster-agnostic** — build once, deploy anywhere.
 API URLs are injected at container startup via environment variables,
-just like `OPENAI_BASE_URL` for the backend.
+just like `LLM_BASE_URL` for the backend.
 
 **Required env vars for deployment:**
 ```bash
 export NEXT_PUBLIC_API_URL=https://your-backend-route   # Backend API URL
 export NEXT_PUBLIC_AGENT_URL=https://your-backend-route/agent  # Agent SSE URL
-export OPENAI_API_KEY=...
-export OPENAI_BASE_URL=...
-export LLM_MODEL_NAME=...
+export LLM_API_KEY=...
+export LLM_BASE_URL=...
+export LLM_MODEL=...
 ```
 
 ```bash

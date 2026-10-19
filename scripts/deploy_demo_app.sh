@@ -210,7 +210,7 @@ data:
   APP_ENV: "production"
   APP_LOG_LEVEL: "INFO"
   APP_CORS_ORIGINS: "https://inference-planner.${CLUSTER_DOMAIN}"
-  LLM_MODEL_NAME: "${LLM_MODEL}"
+  LLM_MODEL: "${LLM_MODEL}"
   VERIFY_SSL: "false"
   MLFLOW_EXPERIMENT_NAME: "inference-design-planner"
   MLFLOW_WORKSPACE: "${NS}"
@@ -224,8 +224,8 @@ metadata:
   namespace: ${NS}
 type: Opaque
 stringData:
-  OPENAI_BASE_URL: "${LLM_BASE_URL}"
-  OPENAI_API_KEY: "${LLM_API_KEY}"
+  LLM_BASE_URL: "${LLM_BASE_URL}"
+  LLM_API_KEY: "${LLM_API_KEY}"
   DATABASE_URL: "${DB_URL_ASYNC}"
   DATABASE_URL_SYNC: "${DB_URL_SYNC}"
 EOF
