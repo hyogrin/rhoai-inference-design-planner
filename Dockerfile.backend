@@ -25,6 +25,8 @@ COPY --from=builder /app /app
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV HF_HOME="/tmp/hf_cache"
+# Fix Playwright browser path for OpenShift (runs as arbitrary non-root UID)
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.playwright-browsers
 
 # Install Playwright Chromium + OS dependencies for headless browser
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -32,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 \
         libcairo2 libasound2 libxshmfence1 libxkbcommon0 fonts-liberation \
     && playwright install chromium \
+    && chmod -R o+rx /app/.playwright-browsers \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8000
