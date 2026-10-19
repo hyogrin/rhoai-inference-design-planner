@@ -19,8 +19,9 @@ class Settings(BaseSettings):
     searxng_url: str = ""
     verify_ssl: bool = True
 
-    mlflow_tracking_uri: str = "http://localhost:5001"
+    mlflow_tracking_uri: str = ""
     mlflow_tracking_token: str = ""
+    mlflow_tracking_auth: str = ""
     mlflow_tracking_insecure_tls: bool = False
     mlflow_experiment_name: str = "inference-design-planner"
     mlflow_workspace: str = ""

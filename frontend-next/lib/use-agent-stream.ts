@@ -18,6 +18,13 @@ export interface StepEvent {
   error?: string | null;
 }
 
+export interface WebPreview {
+  url: string;
+  title: string;
+  thumbnail: string; // base64 JPEG
+  timestamp: number;
+}
+
 export interface WorkloadInterrupt {
   type: string;
   model_repo_id: string;
@@ -50,6 +57,7 @@ export interface AgentState {
   error: string | null;
   threadId: string | null;
   totalEvidence: number;
+  webPreviews: WebPreview[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   viewModel: any | null;
 }
@@ -61,6 +69,7 @@ const DISCOVERY_NODES = [
   "fetch_huggingface_metadata",
   "discover_vllm_recipe",
   "discover_redhat_evaluations",
+  "discover_community_evidence",
   "check_rhoai_compatibility",
   "fetch_pricing",
   "validate_discovery",
@@ -76,6 +85,7 @@ export function useAgentStream() {
     error: null,
     threadId: null,
     totalEvidence: 0,
+    webPreviews: [],
     viewModel: null,
   });
 
@@ -112,6 +122,7 @@ export function useAgentStream() {
         error: null,
         threadId,
         totalEvidence: 0,
+        webPreviews: [],
         viewModel: null,
       });
 
@@ -261,6 +272,7 @@ const NODE_LABELS: Record<string, string> = {
   fetch_huggingface_metadata: "Fetched HuggingFace model metadata",
   discover_vllm_recipe: "Searched vLLM serving recipes",
   discover_redhat_evaluations: "Looked up HuggingFace model card benchmarks",
+  discover_community_evidence: "Searched community evidence via web",
   check_rhoai_compatibility: "Checked RHOAI validated models matrix",
   fetch_pricing: "Retrieved GPU pricing data",
   validate_discovery: "Validated discovery results",
@@ -301,6 +313,20 @@ function handleEvent(
           status: "completed",
           interrupt,
           totalEvidence: interrupt.evidence_collected || prev.totalEvidence,
+        }));
+      } else if (name === "web_preview") {
+        const preview = event.value as { url: string; title: string; thumbnail: string };
+        setState((prev) => ({
+          ...prev,
+          webPreviews: [
+            ...prev.webPreviews,
+            {
+              url: preview.url,
+              title: preview.title,
+              thumbnail: preview.thumbnail,
+              timestamp: Date.now(),
+            },
+          ],
         }));
       } else if (name === "view_model") {
         setState((prev) => ({

@@ -183,7 +183,7 @@ class TestCommunitySearchConnector:
     """Test CommunitySearchConnector logic without network calls."""
 
     def setup_method(self):
-        self.connector = CommunitySearchConnector(mcp_url="http://localhost:9999")
+        self.connector = CommunitySearchConnector()
 
     @pytest.mark.asyncio
     async def test_search_with_mocked_results(self):
@@ -194,7 +194,8 @@ class TestCommunitySearchConnector:
              "content": "Bug report"},
         ]
 
-        with patch.object(self.connector, "_web_search", new_callable=AsyncMock, return_value=mock_results):
+        with patch.object(self.connector, "_ddg_search", new_callable=AsyncMock, return_value=mock_results), \
+             patch.object(self.connector, "_llm_analyze", new_callable=AsyncMock, return_value=("Test summary", {"input_tokens": 100, "output_tokens": 50, "total_tokens": 150})):
             evidence = await self.connector.search_model_evidence(
                 "meta-llama/Llama-3.1-70B-Instruct",
                 evidence_types=["compatibility"],

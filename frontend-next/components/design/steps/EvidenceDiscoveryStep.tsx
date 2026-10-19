@@ -1,9 +1,10 @@
 "use client";
 
-import { FileSearch, BookOpen, FlaskConical, Globe, ShieldCheck, Loader2, ExternalLink } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { FileSearch, BookOpen, FlaskConical, Globe, ShieldCheck, Loader2, ExternalLink, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
-import type { AgentState, NodeStatus } from "@/lib/use-agent-stream";
+import type { AgentState, NodeStatus, WebPreview } from "@/lib/use-agent-stream";
 
 const EVIDENCE_SOURCES = [
   {
@@ -114,6 +115,115 @@ function StatusBadge({ status }: { status: NodeStatus }) {
   }
 }
 
+function WebPreviewPanel({ previews, isActive }: { previews: WebPreview[]; isActive: boolean }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const hasResults = previews.length > 0;
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [previews.length]);
+
+  return (
+    <div className={cn(
+      "rounded-xl border p-4 transition-all",
+      isActive
+        ? "border-[var(--primary)]/40 bg-[var(--primary)]/5"
+        : "border-[var(--border)] bg-[var(--muted)]/30"
+    )}>
+      <div className="mb-3 flex items-center gap-2">
+        <Monitor className={cn(
+          "h-4 w-4",
+          isActive ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"
+        )} />
+        <span className="text-sm font-medium">Contents Research</span>
+        {isActive && (
+          <span className="flex items-center gap-1.5 rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-xs font-medium text-[var(--primary)]">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Reading pages…
+          </span>
+        )}
+        {!isActive && hasResults && (
+          <span className="text-xs text-[var(--muted-foreground)]">
+            {previews.length} page{previews.length > 1 ? "s" : ""} read
+          </span>
+        )}
+      </div>
+
+      {hasResults ? (
+        <div
+          ref={scrollRef}
+          className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin"
+        >
+          {previews.map((p, i) => (
+            <a
+              key={`${p.url}-${i}`}
+              href={p.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex-none"
+            >
+              <div className="relative w-[200px] overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-sm transition-shadow hover:shadow-md">
+                <div className="flex items-center gap-1.5 border-b border-[var(--border)] bg-[var(--muted)] px-2 py-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-400/60" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-400/60" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400/60" />
+                  <span className="ml-1 flex-1 truncate text-[8px] text-[var(--muted-foreground)]">
+                    {(() => { try { return new URL(p.url).hostname; } catch { return p.url.slice(0, 30); } })()}
+                  </span>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`data:image/jpeg;base64,${p.thumbnail}`}
+                  alt={p.title}
+                  className="h-[125px] w-full object-cover object-top"
+                  loading="lazy"
+                />
+                <div className="border-t border-[var(--border)] px-2 py-1">
+                  <p className="truncate text-[10px] font-medium text-[var(--foreground)] group-hover:text-[var(--primary)]">
+                    {p.title}
+                  </p>
+                </div>
+              </div>
+            </a>
+          ))}
+
+          {isActive && (
+            <div className="flex w-[200px] flex-none items-center justify-center rounded-lg border border-dashed border-[var(--primary)]/30 bg-[var(--primary)]/5">
+              <div className="flex flex-col items-center gap-1.5 text-[var(--primary)]/60">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-[10px]">Loading…</span>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className={cn(
+          "flex items-center justify-center rounded-lg border border-dashed py-6",
+          isActive
+            ? "border-[var(--primary)]/30 bg-[var(--primary)]/5"
+            : "border-[var(--border)] bg-[var(--muted)]/20"
+        )}>
+          <div className={cn(
+            "flex items-center gap-2",
+            isActive ? "text-[var(--primary)]/60" : "text-[var(--muted-foreground)]/50"
+          )}>
+            {isActive ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-xs">Searching and reading web pages…</span>
+              </>
+            ) : (
+              <span className="text-xs">Page previews will appear here</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface EvidenceDiscoveryStepProps {
   agentState: AgentState;
 }
@@ -191,8 +301,13 @@ export function EvidenceDiscoveryStep({ agentState }: EvidenceDiscoveryStepProps
         )}
       </div>
 
-      {/* Evidence Source Cards */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* ── Web Search ── */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-[var(--muted-foreground)]" />
+          <h3 className="text-sm font-medium">Web Search</h3>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
         {EVIDENCE_SOURCES.map((source) => {
           const nodeStatus = nodeStatuses[source.nodeKey] || "pending";
           const isDone = nodeStatus === "done";
@@ -315,9 +430,16 @@ export function EvidenceDiscoveryStep({ agentState }: EvidenceDiscoveryStepProps
             </div>
           );
         })}
+        </div>
       </div>
 
-      {/* Event Log */}
+      {/* ── Contents Research ── */}
+      <WebPreviewPanel
+        previews={agentState.webPreviews}
+        isActive={nodeStatuses["discover_community_evidence"] === "running"}
+      />
+
+      {/* ── Activity Log ── */}
       {steps.length > 0 && (
         <div className="rounded-xl border border-[var(--border)] p-6">
           <div className="mb-3 flex items-center justify-between">

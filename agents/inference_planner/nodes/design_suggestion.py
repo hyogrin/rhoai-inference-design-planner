@@ -18,8 +18,6 @@ from langchain_openai import ChatOpenAI
 from agents.inference_planner.prompts import (
     DESIGN_PLANNING_SYSTEM,
     DESIGN_PLANNING_USER,
-    DESIGN_SUGGESTION_SYSTEM,
-    DESIGN_SUGGESTION_USER,
     DESIGN_VALIDATION_SYSTEM,
     DESIGN_VALIDATION_USER,
     LANGUAGE_INSTRUCTION,
@@ -50,6 +48,7 @@ def _make_llm(model_name: str, base_url: str, api_key: str, verify_ssl: bool,
         temperature=temperature,
         max_tokens=max_tokens,
         timeout=timeout,
+        streaming=True,
     )
     if not verify_ssl:
         kwargs["http_async_client"] = httpx.AsyncClient(verify=False)
@@ -146,9 +145,9 @@ def _build_context(state: PlannerState) -> dict[str, str]:
 
     evidence_items = state.get("evidence_items", [])
     evidence_lines = []
-    for item in evidence_items[:15]:
+    for item in evidence_items[:10]:
         cat = item.get("category", "")
-        title = item.get("title", "")
+        title = item.get("title", "")[:80]
         summary = (item.get("summary") or "")[:200]
         evidence_lines.append(f"- [{cat}] {title}: {summary}")
     evidence_summary = "\n".join(evidence_lines) if evidence_lines else "No evidence collected"
@@ -262,8 +261,230 @@ def _build_context(state: PlannerState) -> dict[str, str]:
     }
 
 
+_MAX_TOOL_CALLS = 5
+
+
+def _build_tools() -> list[dict[str, Any]]:
+    """Return OpenAI-compatible tool definitions for web search + page reading."""
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": "web_search",
+                "description": (
+                    "Search the web using DuckDuckGo and read the top result pages. "
+                    "Returns full page content (not just snippets) for the top results. "
+                    "Use when the evidence summary lacks critical information such as "
+                    "benchmarks, compatibility reports, or deployment guides."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Focused search query (e.g. 'Llama-3.1-70B vLLM FP8 benchmark throughput')",
+                        },
+                    },
+                    "required": ["query"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "read_page",
+                "description": (
+                    "Read the full text content of a specific web page URL. "
+                    "Uses a browser to render JS-heavy pages (e.g. HuggingFace model cards). "
+                    "Use when you have a specific URL from search results or evidence "
+                    "and need to read its detailed content."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "url": {
+                            "type": "string",
+                            "description": "The URL to read (e.g. 'https://huggingface.co/meta-llama/Llama-3-8B')",
+                        },
+                    },
+                    "required": ["url"],
+                },
+            },
+        },
+    ]
+
+
+async def _execute_tool(name: str, args: dict[str, Any]) -> str:
+    """Execute a tool call and return the result text."""
+    if name == "web_search":
+        from connectors.web_reader import search_and_read
+
+        query = args.get("query", "")
+        return await search_and_read(query, num_results=3, max_chars_per_page=3000)
+
+    if name == "read_page":
+        from connectors.web_reader import read_page
+
+        url = args.get("url", "")
+        return await read_page(url, max_chars=4000)
+
+    return f"Unknown tool: {name}"
+
+
+async def _planning_with_tools(
+    llm: ChatOpenAI,
+    system_prompt: str,
+    user_prompt: str,
+    tool_span_cb: Any = None,
+) -> tuple[str, list[dict[str, Any]]]:
+    """Run the planning step with optional tool calling (ReAct-style).
+
+    Provides two tools to the LLM:
+      - ``web_search``: DuckDuckGo search + Playwright page reading
+      - ``read_page``: Read a specific URL's content via Playwright
+
+    If the server rejects tool calling (e.g. vLLM without
+    ``--enable-auto-tool-choice``), automatically falls back to a plain
+    invocation without tools.
+
+    Returns:
+        (draft_plan_text, list_of_tool_call_records)
+    """
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+
+    tool_records: list[dict[str, Any]] = []
+    tool_defs = _build_tools()
+
+    messages: list[Any] = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=user_prompt),
+    ]
+
+    # Try binding tools — if the server doesn't support it, fall back gracefully
+    try:
+        llm_with_tools = llm.bind_tools(tool_defs)
+        response = await llm_with_tools.ainvoke(messages)
+    except Exception as exc:
+        logger.info("Tool calling not available (%s), using plain LLM", type(exc).__name__)
+        response = await llm.ainvoke(messages)
+        return response.content.strip(), tool_records
+
+    tool_calls_made = 0
+    while tool_calls_made < _MAX_TOOL_CALLS:
+        if not isinstance(response, AIMessage) or not response.tool_calls:
+            break
+
+        messages.append(response)
+
+        for tc in response.tool_calls:
+            tool_name = tc["name"]
+            tool_args = tc["args"]
+            tool_calls_made += 1
+
+            logger.info(
+                "Tool call #%d: %s(%s)",
+                tool_calls_made, tool_name,
+                ", ".join(f"{k}={v!r}" for k, v in tool_args.items()),
+            )
+
+            result_text = await _execute_tool(tool_name, tool_args)
+            messages.append(ToolMessage(
+                content=result_text, tool_call_id=tc["id"],
+            ))
+
+            record = {
+                "tool": tool_name,
+                "args": tool_args,
+                "result_preview": result_text[:500],
+            }
+            tool_records.append(record)
+
+            if tool_span_cb:
+                tool_span_cb(tool_name, tool_args, result_text)
+
+        if tool_calls_made >= _MAX_TOOL_CALLS:
+            break
+
+        try:
+            response = await llm_with_tools.ainvoke(messages)
+        except Exception:
+            break
+
+    final_text = response.content.strip() if isinstance(response, AIMessage) else str(response)
+    return final_text, tool_records
+
+
+_EVIDENCE_SUMMARIZE_SYSTEM = """\
+You are a technical summarizer. Condense the evidence items into a deployment brief \
+(6-10 bullet points). Preserve:
+- vLLM compatibility status and required flags
+- Benchmark numbers (throughput tok/s, latency ms, GPU type)
+- Recommended tensor-parallel config and GPU count
+- Known issues, limitations, or caveats
+- RHOAI validation status if mentioned
+Drop marketing text, generic descriptions, and duplicate information."""
+
+_EVIDENCE_SUMMARIZE_USER = """\
+Model: {model_repo_id} on {gpu_count}× {gpu_type}
+
+Evidence:
+{raw_evidence}
+
+Produce the deployment-relevant evidence brief."""
+
+# Summarize when raw evidence exceeds ~1200 chars (~300 tokens).
+# 6 items × ~200 chars each = ~1200 chars → at the threshold.
+# Below this, raw evidence is compact enough for direct use.
+_EVIDENCE_SUMMARIZE_THRESHOLD = 1200
+
+
+async def _summarize_evidence(
+    llm: ChatOpenAI,
+    ctx: dict[str, str],
+    evidence_items: list[dict],
+) -> str:
+    """Use LLM to condense evidence into a ~600-char brief for the planning step.
+
+    Skips the LLM call if raw evidence is already compact (< 1200 chars).
+    Context budget: evidence should stay under ~200 tokens (~800 chars).
+    With 8K context window, headroom is ~3000 tokens even at ~200 token evidence.
+    """
+    if not evidence_items:
+        return "No evidence collected"
+
+    raw_lines = []
+    for item in evidence_items[:10]:
+        cat = item.get("category", "")
+        title = item.get("title", "")[:80]
+        summary = (item.get("summary") or "")[:250]
+        raw_lines.append(f"- [{cat}] {title}: {summary}")
+    raw_evidence = "\n".join(raw_lines)
+
+    if len(raw_evidence) <= _EVIDENCE_SUMMARIZE_THRESHOLD:
+        logger.info("Evidence compact enough (%d chars), using raw", len(raw_evidence))
+        return raw_evidence
+
+    try:
+        user_msg = _EVIDENCE_SUMMARIZE_USER.format(
+            model_repo_id=ctx.get("model_repo_id", "Unknown"),
+            gpu_count=ctx.get("gpu_count", "?"),
+            gpu_type=ctx.get("gpu_type", "?"),
+            raw_evidence=raw_evidence,
+        )
+        response = await llm.ainvoke([
+            SystemMessage(content=_EVIDENCE_SUMMARIZE_SYSTEM),
+            HumanMessage(content=user_msg),
+        ])
+        condensed = response.content.strip()
+        logger.info("Evidence condensed: %d → %d chars", len(raw_evidence), len(condensed))
+        return condensed
+    except Exception as exc:
+        logger.warning("Evidence summarization failed (%s), truncating raw", exc)
+        return "\n".join(raw_lines[:4])
+
+
 async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
-    """Call LLM twice: (1) draft a deployment plan, (2) validate and expand into final suggestion."""
+    """Call LLM: (0) summarize evidence, (1) draft plan with tools, (2) validate and expand."""
     from backend.config import get_settings
     from backend.tracing import append_trace_record, build_trace_record
 
@@ -324,7 +545,31 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
             except Exception:
                 pass
 
-        # ── Step 1: Planning ──
+        # ── Step 0: Evidence Summarization ──
+        evidence_items = state.get("evidence_items", [])
+        summary_llm = _make_llm(model_name, base_url, api_key, verify_ssl,
+                                max_tokens=512, timeout=30)
+
+        sum_span_cm: Any = contextlib.nullcontext()
+        if _should_trace:
+            try:
+                sum_span_cm = mlflow.start_span(name="evidence_summarization", span_type="LLM")
+            except Exception:
+                sum_span_cm = contextlib.nullcontext()
+
+        with sum_span_cm as sum_span:
+            condensed_evidence = await _summarize_evidence(summary_llm, ctx, evidence_items)
+            if sum_span is not None:
+                try:
+                    sum_span.set_inputs({"evidence_count": len(evidence_items)})
+                    sum_span.set_outputs({"condensed_length": len(condensed_evidence)})
+                except Exception:
+                    pass
+
+        # Replace raw evidence with condensed version in context
+        ctx["evidence_summary"] = condensed_evidence
+
+        # ── Step 1: Planning (with optional tool calling) ──
         planning_prompt = DESIGN_PLANNING_USER.format(**{k: str(v) for k, v in ctx.items()})
         if lang_instruction:
             planning_prompt += lang_instruction
@@ -339,15 +584,32 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
         t1 = time.monotonic()
         planning_llm = _make_llm(model_name, base_url, api_key, verify_ssl,
                                  max_tokens=1024, timeout=60)
+
+        tool_call_records: list[dict[str, Any]] = []
+
+        def _tool_span_cb(tool_name: str, tool_args: dict, result: str) -> None:
+            if not _should_trace:
+                return
+            try:
+                with mlflow.start_span(name=f"tool_{tool_name}", span_type="TOOL") as ts:
+                    ts.set_inputs(tool_args)
+                    ts.set_outputs({"result_preview": result[:500]})
+            except Exception:
+                pass
+
         with plan_span_cm as plan_span:
-            plan_response = await planning_llm.ainvoke([
-                SystemMessage(content=DESIGN_PLANNING_SYSTEM + lang_instruction),
-                HumanMessage(content=planning_prompt),
-            ])
-            draft_plan = plan_response.content.strip()
+            draft_plan, tool_call_records = await _planning_with_tools(
+                planning_llm,
+                DESIGN_PLANNING_SYSTEM + lang_instruction,
+                planning_prompt,
+                tool_span_cb=_tool_span_cb,
+            )
             plan_latency = (time.monotonic() - t1) * 1000
-            plan_tokens = _extract_tokens(plan_response)
-            logger.info("Planning step completed (%d chars, %.0fms, %s)", len(draft_plan), plan_latency, plan_tokens)
+            plan_tokens: dict[str, int] = {}
+            logger.info(
+                "Planning step completed (%d chars, %.0fms, %d tool calls)",
+                len(draft_plan), plan_latency, len(tool_call_records),
+            )
             if plan_span is not None:
                 try:
                     plan_span.set_inputs({
@@ -356,9 +618,12 @@ async def generate_design_suggestion(state: PlannerState) -> dict[str, Any]:
                             {"role": "user", "content": planning_prompt[:300]},
                         ],
                         "model": model_name,
+                        "tool_calls": len(tool_call_records),
                     })
-                    plan_span.set_outputs({"content": draft_plan[:500]})
-                    _set_span_token_usage(plan_span, plan_tokens)
+                    plan_span.set_outputs({
+                        "content": draft_plan[:500],
+                        "tool_call_records": tool_call_records,
+                    })
                 except Exception:
                     pass
 

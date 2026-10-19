@@ -150,6 +150,7 @@ async def interpret_model_config(state: PlannerState) -> dict[str, Any]:
             temperature=0.0,
             max_tokens=2000,
             timeout=30,
+            streaming=True,
             model_kwargs={"response_format": {"type": "json_object"}},
         )
         if not verify_ssl:

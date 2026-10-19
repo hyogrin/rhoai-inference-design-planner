@@ -15,7 +15,6 @@ import os
 from typing import Any
 
 from agents.inference_planner.state import PlannerState
-from connectors.community_search import CommunitySearchConnector
 from connectors.huggingface import HuggingFaceConnector, ModelNotFoundError
 from connectors.pricing import PricingConnector
 from connectors.redhat_model_cards import RedHatModelCardConnector
@@ -55,7 +54,8 @@ async def fetch_huggingface_metadata(state: PlannerState) -> dict[str, Any]:
             "phase_history": ["hf_metadata_failed"],
         }
 
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
+
     from domain.evidence import EvidenceItem
 
     arch_dict = architecture.model_dump(mode="json")
@@ -85,7 +85,7 @@ async def fetch_huggingface_metadata(state: PlannerState) -> dict[str, Any]:
         source_url=f"https://huggingface.co/{repo_id}/blob/{revision}/config.json",
         source_domain="huggingface.co",
         publisher="Hugging Face",
-        retrieved_at=datetime.now(timezone.utc),
+        retrieved_at=datetime.now(UTC),
         model_revision=revision,
         source_tier="primary",
         verification_level="verified",
@@ -147,28 +147,266 @@ async def discover_redhat_evaluations(state: PlannerState) -> dict[str, Any]:
 
 
 async def discover_community_evidence(state: PlannerState) -> dict[str, Any]:
-    """Discover community evidence via web search."""
+    """Contents Research: read pages already found by Web Search nodes.
+
+    Runs AFTER validate_discovery so that evidence_items from HuggingFace,
+    vLLM recipes, Red Hat evaluations, and RHOAI compatibility are available.
+
+    Pipeline:
+      1. Collect source_urls from existing evidence_items
+      2. Playwright reads top pages (with thumbnail screenshots streamed to frontend)
+      3. LLM analyzes page content → enriches evidence summaries
+
+    All stages traced as MLflow spans with the same session_id.
+    """
+    import contextlib
+    import time
+    from typing import Any as _Any
+
     repo_id = state.get("model_repo_id", "")
     if not repo_id:
         return {"phase_history": ["community_evidence_skipped"]}
 
-    connector = CommunitySearchConnector()
+    session_id = state.get("session_id", "")
+    evidence_items = state.get("evidence_items", [])
 
+    if not evidence_items:
+        logger.info("No evidence items to enrich for %s", repo_id)
+        return {"phase_history": ["community_evidence_skipped"]}
+
+    # Stream writer for real-time page preview thumbnails
+    writer = None
     try:
-        evidence_items = await connector.search_model_evidence(
-            repo_id=repo_id,
-            evidence_types=["compatibility", "performance", "deployment"],
-            max_results_per_type=3,
-        )
-    except Exception as exc:
-        logger.warning("Community evidence search failed for %s: %s", repo_id, exc)
-        return {"phase_history": ["community_evidence_failed"]}
+        from langgraph.config import get_stream_writer
+        writer = get_stream_writer()
+    except Exception:
+        pass
 
-    new_evidence = [item.model_dump(mode="json") for item in evidence_items]
-    logger.info("Found %d community evidence items for %s", len(new_evidence), repo_id)
+    def _on_screenshot(url: str, title: str, b64_jpeg: str) -> None:
+        if writer is None:
+            return
+        try:
+            writer({
+                "type": "web_preview",
+                "url": url,
+                "title": title,
+                "thumbnail": b64_jpeg,
+            })
+        except Exception:
+            pass
+
+    # MLflow tracing
+    _should_trace = False
+    try:
+        import mlflow
+
+        from backend.tracing import is_tracing_enabled
+        _should_trace = is_tracing_enabled()
+    except ImportError:
+        pass
+
+    parent_cm: _Any = contextlib.nullcontext()
+    if _should_trace:
+        try:
+            parent_cm = mlflow.start_span(
+                name="contents_research", span_type="CHAIN",
+            )
+        except Exception:
+            parent_cm = contextlib.nullcontext()
+
+    # Collect unique source URLs from existing evidence (prioritize high-tier sources)
+    seen_urls: set[str] = set()
+    seen_categories: set[str] = set()
+    urls_to_read: list[dict[str, str]] = []
+
+    # Pick the best URL from each category (1 per category)
+    target_categories = [
+        "model_metadata",           # Model Architecture (HuggingFace)
+        "recipe",                   # vLLM Recipe
+        "redhat_evaluation",        # Red Hat Evaluations
+        "platform_compatibility",   # RHOAI Compatibility
+    ]
+
+    tier_order = {"primary": 0, "official_secondary": 1, "secondary": 2, "community": 3}
+    sorted_items = sorted(
+        evidence_items,
+        key=lambda x: tier_order.get(x.get("source_tier", "community"), 3),
+    )
+
+    for item in sorted_items:
+        cat = item.get("category", "")
+        if cat in seen_categories:
+            continue
+        if cat not in target_categories:
+            continue
+        url = item.get("source_url", "")
+        if not url or url in seen_urls:
+            continue
+        if url.endswith(".json") or "/raw/" in url:
+            continue
+        if "/blob/" in url and "github.com" in url:
+            continue
+        seen_urls.add(url)
+        seen_categories.add(cat)
+        urls_to_read.append({
+            "url": url,
+            "title": item.get("title", ""),
+            "category": cat,
+            "evidence_id": str(item.get("evidence_id", "")),
+        })
+        if len(seen_categories) >= len(target_categories):
+            break
+
+    if not urls_to_read:
+        logger.info("No readable URLs in evidence for %s", repo_id)
+        return {"phase_history": ["community_evidence_no_urls"]}
+
+    t0 = time.monotonic()
+    enriched_items: list[dict[str, _Any]] = []
+
+    with parent_cm as parent_span:
+        if parent_span is not None:
+            try:
+                parent_span.set_inputs({
+                    "repo_id": repo_id,
+                    "urls_to_read": [u["url"] for u in urls_to_read],
+                    "session_id": session_id,
+                })
+                if session_id:
+                    mlflow.update_current_trace(session_id=session_id)
+            except Exception:
+                pass
+
+        # ── Step 1: Playwright Page Reading ──
+        read_span_cm: _Any = contextlib.nullcontext()
+        if _should_trace:
+            try:
+                read_span_cm = mlflow.start_span(
+                    name="playwright_read_pages", span_type="TOOL",
+                )
+            except Exception:
+                read_span_cm = contextlib.nullcontext()
+
+        t1 = time.monotonic()
+        page_contents: list[dict[str, str]] = []
+
+        with read_span_cm as read_span:
+            from connectors.web_reader import read_page
+
+            for entry in urls_to_read:
+                url = entry["url"]
+                try:
+                    content = await read_page(
+                        url, max_chars=2000, on_screenshot=_on_screenshot,
+                    )
+                    if content and not content.startswith("[Failed") and not content.startswith("[Skipped"):
+                        page_contents.append({**entry, "content": content})
+                except Exception as exc:
+                    logger.debug("Page read failed for %s: %s", url, exc)
+
+            if read_span is not None:
+                try:
+                    read_span.set_outputs({
+                        "pages_read": len(page_contents),
+                        "latency_ms": round((time.monotonic() - t1) * 1000),
+                    })
+                except Exception:
+                    pass
+
+        # ── Step 2: LLM Content Analysis ──
+        llm_span_cm: _Any = contextlib.nullcontext()
+        if _should_trace:
+            try:
+                llm_span_cm = mlflow.start_span(
+                    name="llm_analyze_pages", span_type="LLM",
+                )
+            except Exception:
+                llm_span_cm = contextlib.nullcontext()
+
+        t2 = time.monotonic()
+        llm_calls = 0
+        total_input_tokens = 0
+        total_output_tokens = 0
+
+        with llm_span_cm as llm_span:
+            from connectors.community_search import CommunitySearchConnector
+
+            connector = CommunitySearchConnector()
+
+            for pc in page_contents:
+                content = pc["content"]
+                if len(content) < 50:
+                    continue
+
+                summary, usage = await connector._llm_analyze(
+                    repo_id=repo_id,
+                    evidence_type=pc.get("category", "compatibility"),
+                    url=pc["url"],
+                    content=content,
+                )
+                llm_calls += 1
+                total_input_tokens += usage.get("input_tokens", 0)
+                total_output_tokens += usage.get("output_tokens", 0)
+
+                if summary and summary != "NOT_RELEVANT":
+                    from datetime import UTC, datetime
+                    from uuid import uuid4
+
+                    from domain.evidence import EvidenceItem
+
+                    item = EvidenceItem(
+                        evidence_id=uuid4(),
+                        category="community",
+                        claim_type="compatibility",
+                        title=f"[Enriched] {pc.get('title', pc['url'])}",
+                        summary=summary[:500],
+                        source_url=pc["url"],
+                        source_domain=pc.get("url", "").split("/")[2] if "/" in pc.get("url", "") else None,
+                        retrieved_at=datetime.now(UTC),
+                        source_tier="official_secondary",
+                        verification_level="reported",
+                    )
+                    enriched_items.append(item.model_dump(mode="json"))
+
+            total_tokens = total_input_tokens + total_output_tokens
+            if llm_span is not None:
+                try:
+                    llm_span.set_outputs({
+                        "llm_calls": llm_calls,
+                        "enriched_items": len(enriched_items),
+                        "latency_ms": round((time.monotonic() - t2) * 1000),
+                        "token_usage": {
+                            "input_tokens": total_input_tokens,
+                            "output_tokens": total_output_tokens,
+                            "total_tokens": total_tokens,
+                        },
+                    })
+                    llm_span.set_attribute("mlflow.chat.tokenUsage", {
+                        "input_tokens": total_input_tokens,
+                        "output_tokens": total_output_tokens,
+                        "total_tokens": total_tokens,
+                    })
+                except Exception:
+                    pass
+
+        total_ms = (time.monotonic() - t0) * 1000
+        logger.info(
+            "Contents research for %s: read %d pages, enriched %d items, %.0fms",
+            repo_id, len(page_contents), len(enriched_items), total_ms,
+        )
+
+        if parent_span is not None:
+            try:
+                parent_span.set_outputs({
+                    "pages_read": len(page_contents),
+                    "enriched_count": len(enriched_items),
+                    "total_ms": round(total_ms),
+                })
+            except Exception:
+                pass
 
     return {
-        "evidence_items": new_evidence,
+        "evidence_items": enriched_items,
         "phase_history": ["community_evidence_discovered"],
     }
 

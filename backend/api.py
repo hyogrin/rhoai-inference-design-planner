@@ -665,7 +665,15 @@ async def _stream_agui(
                 return
 
             if mode == "custom":
-                yield _agui_event({"type": "CUSTOM", "name": "progress", "value": chunk})
+                # Route named custom events (e.g. web_preview) by their type
+                if isinstance(chunk, dict) and "type" in chunk:
+                    yield _agui_event({
+                        "type": "CUSTOM",
+                        "name": chunk["type"],
+                        "value": chunk,
+                    })
+                else:
+                    yield _agui_event({"type": "CUSTOM", "name": "progress", "value": chunk})
                 continue
 
             # mode == "updates"

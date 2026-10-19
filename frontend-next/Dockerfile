@@ -21,6 +21,10 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY docker-entrypoint.sh ./
 
+# OpenShift runs as arbitrary non-root UID — ensure .next is writable
+# so the entrypoint can replace URL placeholders at startup.
+RUN chmod -R g+w .next && chmod +x docker-entrypoint.sh
+
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 

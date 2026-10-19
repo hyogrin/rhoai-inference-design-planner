@@ -131,6 +131,7 @@ async def _estimate_params_with_llm(repo_id: str) -> float | None:
             temperature=0,
             max_tokens=20,
             timeout=15,
+            streaming=True,
         )
         if not verify_ssl:
             llm_kwargs["http_async_client"] = httpx.AsyncClient(verify=False)

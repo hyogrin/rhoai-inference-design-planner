@@ -2,8 +2,10 @@
 
 from langgraph.graph import END, START, StateGraph
 
+from agents.inference_planner.nodes.design_suggestion import generate_design_suggestion
 from agents.inference_planner.nodes.discovery import (
     check_rhoai_compatibility,
+    discover_community_evidence,
     discover_redhat_evaluations,
     discover_vllm_recipe,
     fetch_huggingface_metadata,
@@ -12,7 +14,6 @@ from agents.inference_planner.nodes.discovery import (
 from agents.inference_planner.nodes.hitl import collect_workload_interrupt
 from agents.inference_planner.nodes.intake import normalize_intake
 from agents.inference_planner.nodes.model_analysis import interpret_model_config
-from agents.inference_planner.nodes.design_suggestion import generate_design_suggestion
 from agents.inference_planner.nodes.sizing import (
     calculate_cost,
     calculate_memory_capacity,
@@ -47,6 +48,7 @@ def build_graph() -> StateGraph:
     graph.add_node("discover_vllm_recipe", discover_vllm_recipe)
     graph.add_node("discover_redhat_evaluations", discover_redhat_evaluations)
     graph.add_node("check_rhoai_compatibility", check_rhoai_compatibility)
+    graph.add_node("discover_community_evidence", discover_community_evidence)
     graph.add_node("fetch_pricing", fetch_pricing)
     graph.add_node("validate_discovery", validate_discovery)
     graph.add_node("interpret_model_config", interpret_model_config)
@@ -64,7 +66,7 @@ def build_graph() -> StateGraph:
     graph.add_edge(START, "normalize_intake")
     graph.add_edge("normalize_intake", "fetch_huggingface_metadata")
 
-    # Fan-out: HF metadata -> parallel discovery nodes
+    # Fan-out: HF metadata -> parallel discovery nodes (Web Search)
     graph.add_conditional_edges(
         "fetch_huggingface_metadata",
         _fan_out_discovery,
@@ -76,15 +78,18 @@ def build_graph() -> StateGraph:
         ],
     )
 
-    # Fan-in: all discovery nodes -> validate_discovery
+    # Fan-in: all Web Search nodes -> validate_discovery
     graph.add_edge("discover_vllm_recipe", "validate_discovery")
     graph.add_edge("discover_redhat_evaluations", "validate_discovery")
     graph.add_edge("check_rhoai_compatibility", "validate_discovery")
     graph.add_edge("fetch_pricing", "validate_discovery")
 
+    # Contents Research: runs AFTER validate_discovery, reads URLs already found
+    graph.add_edge("validate_discovery", "discover_community_evidence")
+
     # Conditional: readiness check
     graph.add_conditional_edges(
-        "validate_discovery",
+        "discover_community_evidence",
         route_readiness,
         {"collect_workload": "interpret_model_config", "blocked": END},
     )
