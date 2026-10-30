@@ -1,7 +1,7 @@
 {
   "header.title": "Inference Design Planner",
   "header.subtitle": "Evidence-backed GPU inference deployment planning for OpenShift AI",
-  "header.savedRecommendations": "Saved Recommendations",
+  "header.savedRecommendations": "View History",
 
   "step1.title": "Model & Hardware Selection",
   "step1.description": "Specify the model you want to deploy and the available hardware pool.",

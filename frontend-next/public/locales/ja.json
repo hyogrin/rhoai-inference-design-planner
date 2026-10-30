@@ -1,7 +1,7 @@
 {
   "header.title": "推論設計プランナー",
   "header.subtitle": "OpenShift AI のためのエビデンスベース GPU 推論デプロイ設計",
-  "header.savedRecommendations": "保存済みレコメンデーション",
+  "header.savedRecommendations": "履歴を見る",
 
   "step1.title": "モデル＆ハードウェア選択",
   "step1.description": "デプロイするモデルと利用可能なハードウェアプールを指定してください。",

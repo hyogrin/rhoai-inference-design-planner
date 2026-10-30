@@ -120,7 +120,7 @@ export default function RecommendationsPage() {
           <Link href="/" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-xl font-semibold">Saved Recommendations</h1>
+          <h1 className="text-xl font-semibold">View History</h1>
           <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-xs text-[var(--primary)]">
             {items.length}
           </span>
@@ -200,7 +200,7 @@ export default function RecommendationsPage() {
         {!loading && !error && items.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Cpu className="mb-4 h-12 w-12 text-[var(--muted-foreground)]/50" />
-            <h3 className="text-lg font-medium">No saved recommendations</h3>
+            <h3 className="text-lg font-medium">No history yet</h3>
             <p className="mt-1 text-sm text-[var(--muted-foreground)]">
               Complete a design session and save the recommendation to see it here.
             </p>

@@ -1,7 +1,7 @@
 {
   "header.title": "推理设计规划器",
   "header.subtitle": "基于证据的 OpenShift AI GPU 推理部署规划",
-  "header.savedRecommendations": "已保存的建议",
+  "header.savedRecommendations": "查看历史",
 
   "step1.title": "模型与硬件选择",
   "step1.description": "指定要部署的模型和可用的硬件池。",

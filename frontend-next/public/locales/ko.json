@@ -1,7 +1,7 @@
 {
   "header.title": "추론 설계 플래너",
   "header.subtitle": "OpenShift AI를 위한 근거 기반 GPU 추론 배포 설계",
-  "header.savedRecommendations": "저장된 권장사항",
+  "header.savedRecommendations": "이력 보기",
 
   "step1.title": "모델 및 하드웨어 선택",
   "step1.description": "배포할 모델과 사용 가능한 하드웨어 풀을 지정하세요.",
