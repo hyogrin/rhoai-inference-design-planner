@@ -23,6 +23,11 @@ WORKDIR /app
 
 COPY --from=builder /app /app
 
+# Allow OpenShift's arbitrary non-root UID to write JSONL trace records.
+RUN mkdir -p /app/data/traces \
+    && chgrp -R 0 /app/data \
+    && chmod -R g=u /app/data
+
 ENV PATH="/app/.venv/bin:$PATH"
 ENV HF_HOME="/tmp/hf_cache"
 # Fix Playwright browser path for OpenShift (runs as arbitrary non-root UID)
